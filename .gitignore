@@ -1,1 +1,13 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies and builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Local worktrees
 .worktrees/
