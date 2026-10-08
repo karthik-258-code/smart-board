@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
+
+const storageKey = 'smart-board:document:v1'
+
+beforeEach(() => localStorage.clear())
 
 describe('Smart Board app shell', () => {
   it('shows Smart Board as the page heading', () => {
@@ -50,5 +54,26 @@ describe('Smart Board app shell', () => {
     const themeButton = screen.getByRole('button', { name: 'Use dark theme' })
     fireEvent.click(themeButton)
     expect(screen.getByRole('button', { name: 'Use light theme' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('loads and saves board documents locally', () => {
+    localStorage.setItem(storageKey, JSON.stringify({ id: 'saved-board', schemaVersion: 1, objects: [{ id: 'saved-note', type: 'note', typeVersion: 1, position: { x: 4, y: 5 }, text: 'Restore me' }] }))
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Note: Restore me' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects).toHaveLength(2)
+  })
+
+  it('preserves invalid saved data until the user starts a new board', () => {
+    const invalidSource = '{unreadable'
+    localStorage.setItem(storageKey, invalidSource)
+    render(<App />)
+    expect(screen.getByRole('alert')).toHaveTextContent(/could not be read/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Keep saved data' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    expect(localStorage.getItem(storageKey)).toBe(invalidSource)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start new board' }))
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}')).toMatchObject({ schemaVersion: 1, objects: [] })
   })
 })

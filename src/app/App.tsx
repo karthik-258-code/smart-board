@@ -3,23 +3,70 @@ import { BoardCanvas } from '../canvas/BoardCanvas'
 import { createEmptyBoard, type BoardObject } from '../domain/model'
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import type { BoardOperation } from '../domain/operations'
+import { loadBoard, saveBoard } from '../persistence/localBoardStore'
 import { BoardInspector } from './BoardInspector'
 import { HistoryControls } from './HistoryControls'
 import { BoardToolbar, type BoardTool } from './BoardToolbar'
+import { SaveStatus, type SaveState } from './SaveStatus'
 import { ThemeControl } from './ThemeControl'
 import './App.css'
 import '../styles/themes.css'
 
 let fallbackId = 0
+const storageKey = 'smart-board:document:v1'
 function createObjectId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `board-object-${++fallbackId}`
 }
 
+type StartupState = {
+  storage: Storage | null
+  history: HistoryState
+  saveState: SaveState
+  problem: string | null
+  recoveryNeeded: boolean
+}
+
+function loadStartupState(): StartupState {
+  const emptyBoard = createEmptyBoard('smart-board')
+  let storage: Storage
+  try {
+    if (typeof window === 'undefined') throw new Error('No browser storage')
+    storage = window.localStorage
+  } catch {
+    return { storage: null, history: { initialDocument: emptyBoard, entries: [], cursor: 0 }, saveState: 'error', problem: 'Browser storage is unavailable.', recoveryNeeded: false }
+  }
+
+  const result = loadBoard(storage, storageKey)
+  if (!result.ok) {
+    const recoveryNeeded = result.error.code === 'invalid_json' || result.error.code === 'invalid_document'
+    return {
+      storage,
+      history: { initialDocument: emptyBoard, entries: [], cursor: 0 },
+      saveState: 'error',
+      problem: result.error.message,
+      recoveryNeeded,
+    }
+  }
+  const document = result.value ?? emptyBoard
+  return {
+    storage,
+    history: { initialDocument: document, entries: [], cursor: 0 },
+    saveState: result.value ? 'saved' : 'new',
+    problem: null,
+    recoveryNeeded: false,
+  }
+}
+
 function App() {
-  const [history, setHistory] = useState<HistoryState>(() => ({ initialDocument: createEmptyBoard('smart-board'), entries: [], cursor: 0 }))
+  const [startup] = useState<StartupState>(loadStartupState)
+  const [history, setHistory] = useState<HistoryState>(startup.history)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dark, setDark] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveState, setSaveState] = useState<SaveState>(startup.saveState)
+  const [saveProblem, setSaveProblem] = useState<string | null>(startup.problem)
+  const [recoveryNeeded, setRecoveryNeeded] = useState(startup.recoveryNeeded)
+  const [preserveSavedData, setPreserveSavedData] = useState(startup.recoveryNeeded)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
@@ -40,7 +87,52 @@ function App() {
     }
     setHistory(result.value)
     setError(null)
+    if (preserveSavedData) {
+      setSaveState('preserved')
+    } else if (!startup.storage) {
+      setSaveState('error')
+      setSaveProblem('Browser storage is unavailable. Changes are only in this session.')
+    } else {
+      const current = stateAt(result.value, result.value.cursor)
+      const saved = current.ok ? saveBoard(startup.storage, storageKey, current.value) : current
+      if (saved.ok) {
+        setSaveState('saved')
+        setSaveProblem(null)
+      } else {
+        setSaveState('error')
+        setSaveProblem(saved.error.message)
+      }
+    }
     return true
+  }
+
+  function keepSavedData() {
+    setPreserveSavedData(true)
+    setRecoveryNeeded(false)
+    setSaveState('preserved')
+    setSaveProblem(null)
+  }
+
+  function startNewBoard() {
+    const document = createEmptyBoard('smart-board')
+    setHistory({ initialDocument: document, entries: [], cursor: 0 })
+    setSelectedId(null)
+    if (!startup.storage) {
+      setSaveState('error')
+      setSaveProblem('Browser storage is unavailable. The new board is only in this session.')
+      return
+    }
+    const result = saveBoard(startup.storage, storageKey, document)
+    if (result.ok) {
+      setPreserveSavedData(false)
+      setRecoveryNeeded(false)
+      setSaveState('saved')
+      setSaveProblem(null)
+    } else {
+      setPreserveSavedData(true)
+      setSaveState('error')
+      setSaveProblem(result.error.message)
+    }
   }
 
   function addObject(type: BoardTool) {
@@ -85,6 +177,14 @@ function App() {
           <ThemeControl dark={dark} onToggle={() => setDark((value) => !value)} />
         </div>
       </header>
+
+      <SaveStatus
+        status={saveState}
+        problem={saveProblem}
+        recoveryNeeded={recoveryNeeded}
+        onKeepSavedData={keepSavedData}
+        onStartNewBoard={startNewBoard}
+      />
 
       <div className="workspace-heading">
         <div>

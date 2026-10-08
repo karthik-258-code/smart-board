@@ -36,6 +36,14 @@
 .theme-control[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { cursor: not-allowed; opacity: 0.45; }
+.save-status, .save-recovery { display: flex; min-height: 2.5rem; align-items: center; justify-content: space-between; gap: 0.75rem; color: var(--ink-soft); font-size: 0.78rem; }
+.save-status-saved::before { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #14804a; content: ""; }
+.save-status-saved { justify-content: flex-start; }
+.save-status-error { color: var(--danger); }
+.save-status button, .save-recovery button { min-height: 2rem; padding: 0.35rem 0.65rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-weight: 650; cursor: pointer; }
+.save-recovery { padding: 0.7rem 0.85rem; border: 1px solid #bc7c21; border-radius: 10px; background: color-mix(in srgb, #ffda91 20%, var(--surface)); color: var(--ink); }
+.save-recovery > div { display: flex; flex-shrink: 0; gap: 0.45rem; }
+.save-recovery button:last-child { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
 
 .workspace-heading { align-items: end; gap: 1rem; padding-top: 0.35rem; }
 .workspace-heading h2 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.9rem); letter-spacing: -0.035em; }
