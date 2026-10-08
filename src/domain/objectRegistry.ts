@@ -7,6 +7,7 @@ import type {
   PointerObject,
   RangeObject,
   ShapeObject,
+  TableObject,
 } from './model'
 import type { Result } from './result'
 
@@ -34,6 +35,12 @@ function hasOnlyFields(value: Record<string, unknown>, allowed: string[]): boole
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isCoordinate(value: unknown): value is { row: number; column: number } {
+  return isRecord(value) && hasOnlyFields(value, ['row', 'column'])
+    && Number.isInteger(value.row) && Number(value.row) >= 0
+    && Number.isInteger(value.column) && Number(value.column) >= 0
 }
 
 function hasValidBase(value: Record<string, unknown>): boolean {
@@ -66,6 +73,37 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
         && typeof value.targetObjectId === 'string'
         && Number.isInteger(value.start) && Number(value.start) >= 0
         && Number.isInteger(value.endExclusive) && Number(value.endExclusive) >= Number(value.start)
+    case 'table': {
+      const rowCount = Array.isArray(value.rowLabels) ? value.rowLabels.length : 0
+      const columnCount = Array.isArray(value.columnLabels) ? value.columnLabels.length : 0
+      if (!Array.isArray(value.rowLabels) || !Array.isArray(value.columnLabels)
+        || value.rowLabels.length < 1 || value.rowLabels.length > 20
+        || value.columnLabels.length < 1 || value.columnLabels.length > 20
+        || !value.rowLabels.every((label) => typeof label === 'string')
+        || !value.columnLabels.every((label) => typeof label === 'string')
+        || !Array.isArray(value.cells) || value.cells.length !== value.rowLabels.length
+        || !value.cells.every((row) => Array.isArray(row) && row.length === columnCount
+          && row.every((cell) => cell === null || typeof cell === 'string' || isFiniteNumber(cell)))
+        || !Array.isArray(value.highlightedCells) || !value.highlightedCells.every(isCoordinate)
+        || !Array.isArray(value.dependencies)) return false
+      const valid = (coordinate: unknown): coordinate is { row: number; column: number } => isCoordinate(coordinate)
+        && coordinate.row < rowCount && coordinate.column < columnCount
+      if (!value.highlightedCells.every(valid)) return false
+      const seenHighlights = new Set(value.highlightedCells.map((cell) => `${cell.row}:${cell.column}`))
+      if (seenHighlights.size !== value.highlightedCells.length) return false
+      const seenEdges = new Set<string>()
+      for (const dependency of value.dependencies) {
+        if (!isRecord(dependency) || !hasOnlyFields(dependency, ['from', 'to'])) return false
+        const from = dependency.from
+        const to = dependency.to
+        if (!valid(from) || !valid(to)) return false
+        if (from.row === to.row && from.column === to.column) return false
+        const key = `${from.row}:${from.column}:${to.row}:${to.column}`
+        if (seenEdges.has(key)) return false
+        seenEdges.add(key)
+      }
+      return true
+    }
   }
 }
 
@@ -113,6 +151,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'range',
     typeVersion: 1,
     validate: (value) => validateObject<RangeObject>(value, 'range', ['name', 'targetObjectId', 'start', 'endExclusive']),
+  },
+  table: {
+    type: 'table',
+    typeVersion: 1,
+    validate: (value) => validateObject<TableObject>(value, 'table', ['rowLabels', 'columnLabels', 'cells', 'highlightedCells', 'dependencies']),
   },
 }
 

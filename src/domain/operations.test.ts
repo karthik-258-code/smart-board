@@ -6,6 +6,10 @@ const array: BoardObject = {
   id: 'array-1', type: 'array', typeVersion: 1, position: { x: 1, y: 2 },
   values: [10, 20, 30], highlightedIndices: [],
 }
+const table: BoardObject = {
+  id: 'table-1', type: 'table', typeVersion: 1, position: { x: 0, y: 0 },
+  rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, null], [null, null]], highlightedCells: [], dependencies: [],
+}
 
 function board(objects: BoardObject[] = [array]): BoardDocument {
   return { id: 'board-1', schemaVersion: 1, objects }
@@ -21,6 +25,9 @@ describe('applyOperation', () => {
     { name: 'set highlights', document: board(), operation: { type: 'array/set-highlight', objectId: 'array-1', indices: [0, 2] }, expected: [{ ...array, highlightedIndices: [0, 2] }] },
     { name: 'move pointer', document: board([{ ...array }, { id: 'p', type: 'pointer', typeVersion: 1, position: { x: 0, y: 0 }, name: 'i', targetObjectId: 'array-1', index: 0 }]), operation: { type: 'pointer/move', objectId: 'p', index: 2 }, expected: [{ ...array }, { id: 'p', type: 'pointer', typeVersion: 1, position: { x: 0, y: 0 }, name: 'i', targetObjectId: 'array-1', index: 2 }] },
     { name: 'set range', document: board([{ ...array }, { id: 'r', type: 'range', typeVersion: 1, position: { x: 0, y: 0 }, name: 'window', targetObjectId: 'array-1', start: 0, endExclusive: 1 }]), operation: { type: 'range/set', objectId: 'r', start: 1, endExclusive: 3 }, expected: [{ ...array }, { id: 'r', type: 'range', typeVersion: 1, position: { x: 0, y: 0 }, name: 'window', targetObjectId: 'array-1', start: 1, endExclusive: 3 }] },
+    { name: 'set table cell', document: board([table]), operation: { type: 'table/set-cell', objectId: 'table-1', coordinate: { row: 1, column: 0 }, value: 7 }, expected: [{ ...table, cells: [[null, null], [7, null]] }] },
+    { name: 'highlight table cells', document: board([table]), operation: { type: 'table/set-highlighted-cells', objectId: 'table-1', coordinates: [{ row: 0, column: 1 }] }, expected: [{ ...table, highlightedCells: [{ row: 0, column: 1 }] }] },
+    { name: 'add table dependency', document: board([table]), operation: { type: 'table/add-dependency', objectId: 'table-1', dependency: { from: { row: 0, column: 0 }, to: { row: 1, column: 1 } } }, expected: [{ ...table, dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }] }] },
   ]
 
   it.each(cases)('applies and inverses $name', ({ document, operation, expected }) => {
@@ -61,6 +68,22 @@ describe('applyOperation', () => {
       expect(applyOperation(document, operation)).toMatchObject({ ok: false })
       expect(document).toEqual(board())
     }
+  })
+
+  it('rejects invalid table coordinates and duplicate dependencies atomically', () => {
+    const document = board([table])
+    const edge = { from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }
+    for (const operation of [
+      { type: 'table/set-cell', objectId: 'table-1', coordinate: { row: 2, column: 0 }, value: 4 },
+      { type: 'table/set-highlighted-cells', objectId: 'table-1', coordinates: [{ row: 4, column: 0 }] },
+      { type: 'table/add-dependency', objectId: 'table-1', dependency: { from: { row: 1, column: 1 }, to: { row: 1, column: 1 } } },
+    ] as BoardOperation[]) {
+      expect(applyOperation(document, operation)).toMatchObject({ ok: false })
+      expect(document).toEqual(board([table]))
+    }
+    const added = applyOperation(document, { type: 'table/add-dependency', objectId: 'table-1', dependency: edge })
+    if (!added.ok) throw new Error('Expected valid dependency to add')
+    expect(applyOperation(added.value.document, { type: 'table/add-dependency', objectId: 'table-1', dependency: edge })).toMatchObject({ ok: false, error: { code: 'duplicate_dependency' } })
   })
 
   it('sets a pointer name and returns the prior name as its inverse', () => {

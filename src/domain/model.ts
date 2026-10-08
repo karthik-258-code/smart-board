@@ -34,7 +34,18 @@ export type RangeObject = BaseObject & {
   endExclusive: number
 }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject
+export type TableCoordinate = { row: number; column: number }
+export type TableDependency = { from: TableCoordinate; to: TableCoordinate }
+export type TableObject = BaseObject & {
+  type: 'table'
+  rowLabels: string[]
+  columnLabels: string[]
+  cells: Array<Array<string | number | null>>
+  highlightedCells: TableCoordinate[]
+  dependencies: TableDependency[]
+}
+
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject
 
 export type BoardDocument = {
   id: string

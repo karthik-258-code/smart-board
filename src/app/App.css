@@ -77,6 +77,14 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .array-cell-highlighted { fill: var(--array-highlight); stroke: var(--accent); stroke-width: 2.5; }
 .array-value { fill: var(--ink); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .array-index { fill: var(--ink-soft); font-size: 11px; font-variant-numeric: tabular-nums; }
+.table-surface { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.table-cell { fill: var(--array-cell); stroke: var(--line); stroke-width: 1.4; }
+.table-cell-highlighted { fill: var(--array-highlight); stroke: var(--accent); stroke-width: 2.5; }
+.table-label { fill: var(--ink-soft); font-size: 12px; font-weight: 700; }
+.table-value { fill: var(--ink); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.table-cell-coordinate { fill: var(--ink-soft); font-size: 8px; pointer-events: none; }
+.table-dependency { stroke: var(--pointer); stroke-width: 2; opacity: 0.78; marker-end: url(#dependency-arrow); }
+marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

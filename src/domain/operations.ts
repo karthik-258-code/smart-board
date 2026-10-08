@@ -1,4 +1,4 @@
-import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, PointerObject, RangeObject } from './model'
+import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -17,6 +17,10 @@ export type BoardOperation =
   | { type: 'pointer/move'; objectId: string; index: number }
   | { type: 'pointer/set-name'; objectId: string; name: string }
   | { type: 'range/set'; objectId: string; start: number; endExclusive: number }
+  | { type: 'table/set-cell'; objectId: string; coordinate: TableCoordinate; value: string | number | null }
+  | { type: 'table/set-highlighted-cells'; objectId: string; coordinates: TableCoordinate[] }
+  | { type: 'table/add-dependency'; objectId: string; dependency: TableDependency }
+  | { type: 'table/remove-dependency'; objectId: string; dependency: TableDependency }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -225,6 +229,40 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
       if (current.type !== 'range') return fail('incompatible_object', 'Operation requires a range.', current.id)
       updated = { ...current, start: operation.start, endExclusive: operation.endExclusive }
       inverse = { type: operation.type, objectId: current.id, start: current.start, endExclusive: current.endExclusive }
+      break
+    case 'table/set-cell':
+      if (current.type !== 'table') return fail('incompatible_object', 'Operation requires a DP table.', current.id)
+      if (!Number.isInteger(operation.coordinate.row) || !Number.isInteger(operation.coordinate.column)
+        || operation.coordinate.row < 0 || operation.coordinate.row >= current.cells.length
+        || operation.coordinate.column < 0 || operation.coordinate.column >= current.columnLabels.length) return fail('invalid_cell', 'Cell coordinate is outside the table.', current.id)
+      if (typeof operation.value === 'number' && !Number.isFinite(operation.value)) return fail('invalid_value', 'Cell value must be finite, text, or empty.', current.id)
+      {
+        const cells = current.cells.map((row) => [...row])
+        const oldValue = cells[operation.coordinate.row][operation.coordinate.column]
+        cells[operation.coordinate.row][operation.coordinate.column] = operation.value
+        updated = { ...current, cells }
+        inverse = { type: operation.type, objectId: current.id, coordinate: operation.coordinate, value: oldValue }
+      }
+      break
+    case 'table/set-highlighted-cells':
+      if (current.type !== 'table') return fail('incompatible_object', 'Operation requires a DP table.', current.id)
+      updated = { ...current, highlightedCells: operation.coordinates }
+      inverse = { type: operation.type, objectId: current.id, coordinates: current.highlightedCells }
+      break
+    case 'table/add-dependency':
+    case 'table/remove-dependency':
+      if (current.type !== 'table') return fail('incompatible_object', 'Operation requires a DP table.', current.id)
+      {
+        const key = JSON.stringify(operation.dependency)
+        const exists = current.dependencies.some((edge) => JSON.stringify(edge) === key)
+        if (operation.type === 'table/add-dependency' && exists) return fail('duplicate_dependency', 'Dependency already exists.', current.id)
+        if (operation.type === 'table/remove-dependency' && !exists) return fail('missing_dependency', 'Dependency does not exist.', current.id)
+        const dependencies = operation.type === 'table/add-dependency'
+          ? [...current.dependencies, operation.dependency]
+          : current.dependencies.filter((edge) => JSON.stringify(edge) !== key)
+        updated = { ...current, dependencies }
+        inverse = { type: operation.type === 'table/add-dependency' ? 'table/remove-dependency' : 'table/add-dependency', objectId: current.id, dependency: operation.dependency }
+      }
       break
   }
 

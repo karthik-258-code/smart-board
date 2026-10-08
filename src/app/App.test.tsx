@@ -38,6 +38,31 @@ describe('Smart Board app shell', () => {
     expect(canvas.getByRole('button', { name: /Array:/ })).toBeInTheDocument()
   })
 
+  it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))
+    const table = screen.getByRole('button', { name: 'DP table, 3 rows by 3 columns' })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cell value' }), { target: { value: '5' } })
+    expect(table).toHaveTextContent('5')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Highlight selected table cell' }))
+    expect(table.querySelector('.table-cell-highlighted')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Add dependency' }))
+    expect(table.querySelector('.table-dependency')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({
+      type: 'table', cells: [[5, null, null], [null, null, null], [null, null, null]],
+      highlightedCells: [{ row: 0, column: 0 }],
+      dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }],
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(table.querySelector('.table-dependency')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(table.querySelector('.table-dependency')).toBeInTheDocument()
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'DP table, 3 rows by 3 columns' })).toHaveTextContent('5')
+    expect(screen.getByRole('button', { name: 'DP table, 3 rows by 3 columns' }).querySelector('.table-dependency')).toBeInTheDocument()
+  })
+
   it('selects an object and edits its note and position from the inspector', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))

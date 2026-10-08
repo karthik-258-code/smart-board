@@ -183,6 +183,11 @@ function App() {
     else if (type === 'shape') object = { id: createObjectId(), type: 'shape', typeVersion: 1, position, shapeKind: 'rectangle', width: 150, height: 92 }
     else if (type === 'empty-array') object = { id: createObjectId(), type: 'array', typeVersion: 1, position, values: [], highlightedIndices: [] }
     else if (type === 'array') object = { id: createObjectId(), type: 'array', typeVersion: 1, position, values: [4, 8, 12], highlightedIndices: [] }
+    else if (type === 'table') object = {
+      id: createObjectId(), type: 'table', typeVersion: 1, position,
+      rowLabels: ['0', '1', '2'], columnLabels: ['0', '1', '2'],
+      cells: [[null, null, null], [null, null, null], [null, null, null]], highlightedCells: [], dependencies: [],
+    }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

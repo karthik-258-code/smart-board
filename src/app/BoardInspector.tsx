@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { BoardObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
+import type { TableObject } from '../domain/model'
 
 export type ComparisonSummary = {
   arrayId: string
@@ -142,6 +143,51 @@ function ArrayControls({ object, onOperation, comparison }: { object: Extract<Bo
   )
 }
 
+function TableControls({ object, onOperation }: { object: TableObject; onOperation: (operation: BoardOperation) => void }) {
+  const [row, setRow] = useState('0')
+  const [column, setColumn] = useState('0')
+  const [targetRow, setTargetRow] = useState('1')
+  const [targetColumn, setTargetColumn] = useState('1')
+  const coordinate = { row: Number(row), column: Number(column) }
+  const currentValue = object.cells[coordinate.row]?.[coordinate.column] ?? null
+  const highlighted = object.highlightedCells.some((cell) => cell.row === coordinate.row && cell.column === coordinate.column)
+  const source = { row: Number(row), column: Number(column) }
+  const target = { row: Number(targetRow), column: Number(targetColumn) }
+  const hasDependency = object.dependencies.some((edge) => edge.from.row === source.row && edge.from.column === source.column && edge.to.row === target.row && edge.to.column === target.column)
+  const rowOptions = object.rowLabels.map((label, index) => <option key={index} value={index}>{label}</option>)
+  const columnOptions = object.columnLabels.map((label, index) => <option key={index} value={index}>{label}</option>)
+  const parseValue = (raw: string): string | number => raw.trim() !== '' && Number.isFinite(Number(raw)) ? Number(raw) : raw
+
+  return <div className="array-controls">
+    <p className="inspector-value">Fill cells in order. Draw dependencies to explain each recurrence.</p>
+    <div className="array-index-pair">
+      <label className="field-control">Row
+        <select aria-label="Table row" value={row} onChange={(event) => setRow(event.target.value)}>{rowOptions}</select>
+      </label>
+      <label className="field-control">Column
+        <select aria-label="Table column" value={column} onChange={(event) => setColumn(event.target.value)}>{columnOptions}</select>
+      </label>
+    </div>
+    <label className="field-control">Cell value
+      <input aria-label="Cell value" value={currentValue === null ? '' : String(currentValue)} onChange={(event) => onOperation({ type: 'table/set-cell', objectId: object.id, coordinate, value: parseValue(event.target.value) })} />
+    </label>
+    <button type="button" disabled={currentValue === null} onClick={() => onOperation({ type: 'table/set-cell', objectId: object.id, coordinate, value: null })}>Clear cell</button>
+    <label className="highlight-toggle"><input type="checkbox" aria-label="Highlight selected table cell" checked={highlighted} onChange={(event) => {
+      const coordinates = event.target.checked
+        ? [...object.highlightedCells, coordinate]
+        : object.highlightedCells.filter((cell) => cell.row !== coordinate.row || cell.column !== coordinate.column)
+      onOperation({ type: 'table/set-highlighted-cells', objectId: object.id, coordinates })
+    }} />Highlight cell</label>
+    <div className="array-action-group">
+      <h3>Dependency</h3>
+      <label className="field-control">Target row<select aria-label="Dependency target row" value={targetRow} onChange={(event) => setTargetRow(event.target.value)}>{rowOptions}</select></label>
+      <label className="field-control">Target column<select aria-label="Dependency target column" value={targetColumn} onChange={(event) => setTargetColumn(event.target.value)}>{columnOptions}</select></label>
+      <button type="button" disabled={hasDependency || (source.row === target.row && source.column === target.column)} onClick={() => onOperation({ type: 'table/add-dependency', objectId: object.id, dependency: { from: source, to: target } })}>Add dependency</button>
+      {object.dependencies.map((edge, index) => <button className="array-remove-button" key={`${edge.from.row}-${edge.from.column}-${edge.to.row}-${edge.to.column}-${index}`} type="button" aria-label={`Remove dependency ${edge.from.row},${edge.from.column} to ${edge.to.row},${edge.to.column}`} onClick={() => onOperation({ type: 'table/remove-dependency', objectId: object.id, dependency: edge })}>Remove {edge.from.row},{edge.from.column} to {edge.to.row},{edge.to.column}</button>)}
+    </div>
+  </div>
+}
+
 export function BoardInspector({
   object,
   onOperation,
@@ -171,6 +217,7 @@ export function BoardInspector({
           {object.type === 'array' && (
             <ArrayControls key={object.id} object={object} onOperation={onOperation} comparison={comparison} />
           )}
+          {object.type === 'table' && <TableControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

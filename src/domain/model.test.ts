@@ -37,6 +37,21 @@ describe('board document', () => {
     expect(validateBoard(board)).toEqual({ ok: true, value: board })
   })
 
+  it('accepts a table with empty cells, labels, highlights, and dependencies', () => {
+    const table = { id: 'dp', type: 'table', typeVersion: 1, position: { x: 0, y: 0 }, rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, 1], ['', 3]], highlightedCells: [{ row: 1, column: 1 }], dependencies: [{ from: { row: 0, column: 1 }, to: { row: 1, column: 1 } }] }
+    expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [table] })).toMatchObject({ ok: true, value: { objects: [table] } })
+  })
+
+  it('rejects table cells, highlights, and dependencies outside table dimensions', () => {
+    const table = { id: 'dp', type: 'table', typeVersion: 1, position: { x: 0, y: 0 }, rowLabels: ['0'], columnLabels: ['0'], cells: [[null]], highlightedCells: [], dependencies: [] }
+    for (const invalid of [
+      { ...table, cells: [[null, 1]] },
+      { ...table, highlightedCells: [{ row: 1, column: 0 }] },
+      { ...table, dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 0 } }] },
+      { ...table, dependencies: [{ from: { row: 0, column: 0 }, to: { row: 0, column: 0 } }] },
+    ]) expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [invalid] })).toMatchObject({ ok: false })
+  })
+
   it('rejects duplicate object IDs', () => {
     const board = {
       id: 'board-1',

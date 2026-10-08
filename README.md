@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** The first manual board milestone is implemented. Current features and verified run commands are listed below; remaining vision and roadmap sections describe future work.
+> **Project status:** Manual board, indexed-array, timeline playback, local persistence, and initial DP table milestones are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -30,6 +30,8 @@ The current app supports a manually authored board with:
 - Editable arrays with indexed insertion and removal, assignment, comparison, swapping, and highlights. Comparisons, swaps, and assignments are reversible timeline steps; pointer and range positions stay valid as arrays change.
 - Named pointers and half-open ranges with target-array validation.
 - Reversible operations with undo, redo, step back, step forward, and restart controls.
+- Timeline autoplay with accessible play/pause and automatic stop at the final step.
+- Labeled 3×3 DP tables with editable cells, highlights, dependency arrows, and reversible history operations.
 - Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
 - Light and dark themes, with accessible names and visible selection states.
 
@@ -274,7 +276,7 @@ Represent changes as reversible steps and provide controls to run, pause, step, 
 
 ### Phase 4: Expand structures and examples
 
-Add DP tables and dependency arrows, followed by linked structures, stacks, queues, trees, heaps, graphs, tries, and hash tables. Provide examples that demonstrate how primitives combine.
+Initial DP tables and dependency arrows are implemented. Remaining work: linked structures, stacks, queues, trees, heaps, graphs, tries, and hash tables, plus prepared examples.
 
 ### Phase 5: Connect supported code
 
@@ -286,7 +288,7 @@ Add durable saving, reopening, and sharing workflows once the board document mod
 
 ## Current status
 
-The manual board described in **Implemented first milestone** is present in the app and covered by tests. The larger product vision and phases below remain proposals. Code execution, runtime variable synchronization, freehand drawing, collaboration, and external sharing are not implemented.
+The implemented features above are present in the app and covered by tests. Remaining work includes additional data structures, prepared lessons and practice, code execution and variable synchronization, freehand drawing, collaboration, and external sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

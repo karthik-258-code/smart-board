@@ -4,6 +4,7 @@ import { NoteRenderer } from './objectRenderers/NoteRenderer'
 import { PointerRenderer } from './objectRenderers/PointerRenderer'
 import { RangeRenderer } from './objectRenderers/RangeRenderer'
 import { ShapeRenderer } from './objectRenderers/ShapeRenderer'
+import { TableRenderer } from './objectRenderers/TableRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -12,6 +13,7 @@ function labelFor(object: BoardObject): string {
     case 'array': return object.values.length ? `Array: ${object.values.join(', ')}` : 'Array: empty'
     case 'pointer': return `Pointer ${object.name}, index ${object.index}`
     case 'range': return `Range ${object.name}, ${object.start} to ${object.endExclusive}`
+    case 'table': return `DP table, ${object.rowLabels.length} rows by ${object.columnLabels.length} columns`
   }
 }
 
@@ -62,6 +64,7 @@ export function ObjectRenderer({
       {object.type === 'array' && <ArrayRenderer object={object} />}
       {object.type === 'pointer' && <PointerRenderer object={object} target={target?.type === 'array' ? target : undefined} />}
       {object.type === 'range' && <RangeRenderer object={object} target={target?.type === 'array' ? target : undefined} />}
+      {object.type === 'table' && <TableRenderer object={object} />}
     </g>
   )
 }

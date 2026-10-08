@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { objectRegistry, validateBoard } from './objectRegistry'
 
 describe('object registry', () => {
-  it('registers the five initial object types', () => {
-    expect(Object.keys(objectRegistry).sort()).toEqual(['array', 'note', 'pointer', 'range', 'shape'])
+  it('registers the supported object types', () => {
+    expect(Object.keys(objectRegistry).sort()).toEqual(['array', 'note', 'pointer', 'range', 'shape', 'table'])
   })
 
   it('rejects an unsupported object type version', () => {
