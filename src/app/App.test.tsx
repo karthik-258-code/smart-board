@@ -1,11 +1,11 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 const storageKey = 'smart-board:document:v1'
 
 beforeEach(() => localStorage.clear())
-afterEach(() => vi.useRealTimers())
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Smart Board app shell', () => {
   function createTimeline() {
@@ -94,6 +94,53 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('button', { name: 'Note: Restore me' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
     expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects).toHaveLength(2)
+  })
+
+  it('imports valid board files after confirmation and saves imported data', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const imported = { id: 'shared-board', schemaVersion: 1, objects: [{ id: 'shared-note', type: 'note', typeVersion: 1, position: { x: 40, y: 50 }, text: 'Shared idea' }] }
+    const file = new File([JSON.stringify(imported)], 'shared.smart-board.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('Import board file'), { target: { files: [file] } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Note: Shared idea' })).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Note: New idea' })).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}')).toEqual(imported)
+    expect(screen.getByText('Step 0 of 0')).toBeInTheDocument()
+  })
+
+  it('exports the current board as a JSON download', () => {
+    vi.useFakeTimers()
+    const createObjectURL = vi.fn(() => 'blob:smart-board')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+    let filename = ''
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { filename = this.download })
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Export board' }))
+    expect(createObjectURL).toHaveBeenCalledWith(expect.objectContaining({ type: 'application/json' }))
+    expect(filename).toMatch(/\.smart-board\.json$/)
+    act(() => vi.advanceTimersByTime(1000))
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:smart-board')
+  })
+
+  it('keeps current board and local data when import is canceled or invalid', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const existing = localStorage.getItem(storageKey)
+    const validFile = new File([JSON.stringify({ id: 'other', schemaVersion: 1, objects: [] })], 'other.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('Import board file'), { target: { files: [validFile] } })
+    await waitFor(() => expect(window.confirm).toHaveBeenCalled())
+    expect(screen.getByRole('button', { name: 'Note: New idea' })).toBeInTheDocument()
+    expect(localStorage.getItem(storageKey)).toBe(existing)
+
+    const badFile = new File(['{bad'], 'broken.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('Import board file'), { target: { files: [badFile] } })
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/not valid JSON/i))
+    expect(screen.getByRole('button', { name: 'Note: New idea' })).toBeInTheDocument()
+    expect(localStorage.getItem(storageKey)).toBe(existing)
   })
 
   it('preserves invalid saved data until the user starts a new board', () => {

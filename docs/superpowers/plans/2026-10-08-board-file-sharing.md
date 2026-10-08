@@ -47,3 +47,9 @@
 - Update README current features and scope limits.
 - Run focused tests, full suite, production build, and `git diff --check`.
 - Commit as `feat: import and export board files`.
+
+## Completion record
+
+- Added validated JSON serialization/parsing, browser download, confirmed import replacement, local save, and atomic failure handling.
+- Verification: focused file/app tests passed; full suite passed (83 tests); production build succeeded; `git diff --check` passed.
+- File sharing remains manual. No cloud links or collaboration service added.

@@ -25,6 +25,11 @@
 .brand-mark span { width: 3px; height: 0.8rem; border-radius: 4px; background: var(--accent-ink); }
 .brand-mark span:nth-child(2) { height: 1.15rem; }
 .header-actions { gap: 1rem; }
+.board-file-controls { display: flex; gap: 0.45rem; }
+.board-file-controls button, .file-import-button { min-height: 2.35rem; padding: 0.45rem 0.65rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 0.73rem; font-weight: 700; cursor: pointer; }
+.file-import-button { position: relative; display: inline-flex; align-items: center; overflow: hidden; }
+.file-import-button:focus-within, .board-file-controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.file-import-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .board-status { color: var(--ink-soft); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .theme-control, .history-controls button, .board-toolbar button, .inspector-actions button {
   display: inline-flex; min-height: 2.4rem; align-items: center; justify-content: center; gap: 0.55rem;
@@ -146,6 +151,8 @@ marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
   .board-drawing { min-height: 25rem; }
   .board-inspector { width: auto; }
   .header-actions { gap: 0.5rem; }
+  .board-file-controls { gap: 0.3rem; }
+  .board-file-controls button, .file-import-button { padding-inline: 0.4rem; font-size: 0.67rem; }
   .theme-control { padding-inline: 0.55rem; font-size: 0.72rem; }
   .theme-indicator { display: none; }
 }

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BoardCanvas } from '../canvas/BoardCanvas'
-import { createEmptyBoard, type BoardObject } from '../domain/model'
+import { createEmptyBoard, type BoardDocument, type BoardObject } from '../domain/model'
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
 import { loadBoard, saveBoard } from '../persistence/localBoardStore'
+import { BoardFileControls } from './BoardFileControls'
 import { BoardInspector, type ComparisonSummary } from './BoardInspector'
 import { HistoryControls } from './HistoryControls'
 import { BoardToolbar, type BoardTool } from './BoardToolbar'
@@ -176,6 +177,28 @@ function App() {
     }
   }
 
+  function importDocument(document: BoardDocument) {
+    setPlaying(false)
+    setHistory({ initialDocument: document, entries: [], cursor: 0 })
+    setSelectedId(null)
+    setError(null)
+    setPreserveSavedData(false)
+    setRecoveryNeeded(false)
+    if (!startup.storage) {
+      setSaveState('error')
+      setSaveProblem('Browser storage is unavailable. The imported board is only in this session.')
+      return
+    }
+    const saved = saveBoard(startup.storage, storageKey, document)
+    if (saved.ok) {
+      setSaveState('saved')
+      setSaveProblem(null)
+    } else {
+      setSaveState('error')
+      setSaveProblem(saved.error.message)
+    }
+  }
+
   function addObject(type: BoardTool) {
     const position = nextObjectPosition(board.objects)
     let object: BoardObject
@@ -239,6 +262,7 @@ function App() {
         </div>
         <div className="header-actions">
           <span className="board-status">{board.objects.length} {board.objects.length === 1 ? 'object' : 'objects'}</span>
+          <BoardFileControls document={board} onImport={importDocument} onError={setError} />
           <ThemeControl dark={dark} onToggle={() => setDark((value) => !value)} />
         </div>
       </header>
