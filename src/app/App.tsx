@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BoardCanvas } from '../canvas/BoardCanvas'
 import { createEmptyBoard, type BoardObject } from '../domain/model'
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
@@ -76,6 +76,7 @@ function App() {
   const [saveProblem, setSaveProblem] = useState<string | null>(startup.problem)
   const [recoveryNeeded, setRecoveryNeeded] = useState(startup.recoveryNeeded)
   const [preserveSavedData, setPreserveSavedData] = useState(startup.recoveryNeeded)
+  const [playing, setPlaying] = useState(false)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
@@ -127,11 +128,13 @@ function App() {
   }
 
   function moveHistory(nextHistory: HistoryState) {
+    setPlaying(false)
     setHistory(nextHistory)
     persistSnapshot(nextHistory)
   }
 
   function onOperation(operation: BoardOperation): boolean {
+    setPlaying(false)
     const result = dispatchHistory(history, operation)
     if (!result.ok) {
       setError(result.error.message)
@@ -151,6 +154,7 @@ function App() {
   }
 
   function startNewBoard() {
+    setPlaying(false)
     const document = createEmptyBoard('smart-board')
     setHistory({ initialDocument: document, entries: [], cursor: 0 })
     setSelectedId(null)
@@ -192,6 +196,26 @@ function App() {
     if (onOperation({ type: 'object/add', object })) setSelectedId(object.id)
   }
 
+  function togglePlayback() {
+    if (playing) setPlaying(false)
+    else if (history.cursor < history.entries.length) setPlaying(true)
+  }
+
+  useEffect(() => {
+    if (!playing) return
+    if (history.cursor >= history.entries.length) {
+      setPlaying(false)
+      return
+    }
+    const timeoutId = window.setTimeout(() => {
+      const nextHistory = { ...history, cursor: history.cursor + 1 }
+      setHistory(nextHistory)
+      persistSnapshot(nextHistory)
+      if (nextHistory.cursor >= nextHistory.entries.length) setPlaying(false)
+    }, 700)
+    return () => window.clearTimeout(timeoutId)
+  }, [history, playing])
+
   function duplicateObject(object: BoardObject) {
     const copy = { ...object, id: createObjectId(), position: { x: object.position.x + 28, y: object.position.y + 28 } } as BoardObject
     if (onOperation({ type: 'object/add', object: copy })) setSelectedId(copy.id)
@@ -230,6 +254,8 @@ function App() {
         <HistoryControls
           cursor={history.cursor}
           total={history.entries.length}
+          playing={playing}
+          onTogglePlayback={togglePlayback}
           onUndo={() => moveHistory(undo(history))}
           onRedo={() => moveHistory(redo(history))}
           onPrevious={() => moveHistory({ ...history, cursor: Math.max(0, history.cursor - 1) })}

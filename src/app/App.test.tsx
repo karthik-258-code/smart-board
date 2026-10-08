@@ -1,12 +1,19 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 const storageKey = 'smart-board:document:v1'
 
 beforeEach(() => localStorage.clear())
+afterEach(() => vi.useRealTimers())
 
 describe('Smart Board app shell', () => {
+  function createTimeline() {
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'Edited note' } })
+  }
+
   it('shows Smart Board as the page heading', () => {
     render(<App />)
 
@@ -93,5 +100,57 @@ describe('Smart Board app shell', () => {
     const added = allNotes.find((note) => note.getAttribute('data-object-id') !== remainingId && note.getAttribute('data-object-id') !== firstId)
     expect(added).toBeDefined()
     expect(added?.getAttribute('transform')).not.toBe(remaining?.getAttribute('transform'))
+  })
+
+  it('plays one timeline step every 700 milliseconds and stops at the end', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    createTimeline()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByText('Step 2 of 3')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(699))
+    expect(screen.getByText('Step 2 of 3')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1))
+    expect(screen.getByText('Step 3 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled()
+  })
+
+  it('pauses autoplay on manual navigation or board edits', () => {
+    vi.useFakeTimers()
+    render(<App />)
+    createTimeline()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    act(() => vi.advanceTimersByTime(350))
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1000))
+    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    act(() => vi.advanceTimersByTime(350))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'New branch' } })
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1000))
+    expect(screen.getByRole('button', { name: 'Note: New branch' })).toBeInTheDocument()
+  })
+
+  it('clears the playback timer when the app unmounts', () => {
+    vi.useFakeTimers()
+    const view = render(<App />)
+    createTimeline()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    const unrelatedTimers = vi.getTimerCount()
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    view.unmount()
+    expect(vi.getTimerCount()).toBe(unrelatedTimers)
   })
 })
