@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
@@ -15,9 +15,40 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('region', { name: 'Board canvas' })).toBeInTheDocument()
   })
 
-  it('provides an Add object control', () => {
+  it('adds note, rectangle, and array objects to the board', () => {
     render(<App />)
 
-    expect(screen.getByRole('button', { name: 'Add object' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add rectangle' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    const canvas = within(screen.getByRole('region', { name: 'Board canvas' }))
+    expect(canvas.getByRole('button', { name: /Note:/ })).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: /Rectangle/ })).toBeInTheDocument()
+    expect(canvas.getByRole('button', { name: /Array:/ })).toBeInTheDocument()
+  })
+
+  it('selects an object and edits its note and position from the inspector', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const canvas = within(screen.getByRole('region', { name: 'Board canvas' }))
+    fireEvent.click(canvas.getByRole('button', { name: /Note:/ }))
+
+    const inspector = screen.getByRole('complementary', { name: 'Object inspector' })
+    const noteText = within(inspector).getByRole('textbox', { name: 'Note text' })
+    fireEvent.change(noteText, { target: { value: 'Binary search' } })
+    fireEvent.change(within(inspector).getByRole('spinbutton', { name: 'Position X' }), { target: { value: '140' } })
+    expect(canvas.getByRole('button', { name: 'Note: Binary search' })).toBeInTheDocument()
+  })
+
+  it('creates unique IDs for repeated additions and toggles theme accessibly', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const canvas = within(screen.getByRole('region', { name: 'Board canvas' }))
+    expect(canvas.getAllByRole('button', { name: /Note:/ })).toHaveLength(2)
+
+    const themeButton = screen.getByRole('button', { name: 'Use dark theme' })
+    fireEvent.click(themeButton)
+    expect(screen.getByRole('button', { name: 'Use light theme' })).toHaveAttribute('aria-pressed', 'true')
   })
 })
