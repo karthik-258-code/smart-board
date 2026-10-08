@@ -33,4 +33,27 @@ describe('BoardCanvas', () => {
     expect(onSelect).toHaveBeenCalledTimes(2)
     expect(onSelect).toHaveBeenCalledWith('note')
   })
+
+  it('drags an object in board coordinates and commits one position operation on release', () => {
+    const onOperation = vi.fn()
+    const onSelect = vi.fn()
+    render(<BoardCanvas document={document} selectedId={null} onSelect={onSelect} onOperation={onOperation} />)
+    const canvas = screen.getByRole('region', { name: 'Board canvas' })
+    const svg = within(canvas).getByLabelText('Board objects')
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+      x: 100, y: 200, left: 100, top: 200, right: 700, bottom: 560,
+      width: 600, height: 360, toJSON: () => ({}),
+    })
+    const note = screen.getByRole('button', { name: 'Note: Idea' })
+
+    fireEvent.pointerDown(note, { button: 0, pointerId: 1, clientX: 120, clientY: 220 })
+    fireEvent.pointerMove(note, { pointerId: 1, clientX: 160, clientY: 260 })
+    fireEvent.pointerUp(note, { pointerId: 1, clientX: 160, clientY: 260 })
+
+    expect(onSelect).toHaveBeenCalledWith('note')
+    expect(onOperation).toHaveBeenCalledTimes(1)
+    expect(onOperation).toHaveBeenCalledWith({
+      type: 'object/update-position', objectId: 'note', position: { x: 100, y: 100 },
+    })
+  })
 })

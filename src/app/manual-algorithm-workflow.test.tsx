@@ -45,4 +45,43 @@ describe('manual algorithm board milestone', () => {
     expect(screen.getByRole('button', { name: 'Pointer r, index 2' })).toHaveAttribute('data-object-id', rightId)
     expect(screen.getByRole('button', { name: 'Range window, 0 to 2' })).toBeInTheDocument()
   })
+
+  it('compares and swaps two-pointer pairs, then replays the sequence', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Value to insert' }), { target: { value: '16' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert value' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add pointer' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pointer name' }), { target: { value: 'l' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add pointer' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pointer name' }), { target: { value: 'r' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Pointer index' }), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Array: 4, 8, 12, 16' }))
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Swap first index' }), { target: { value: '0' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Swap second index' }), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Swap values' }))
+    expect(screen.getByRole('button', { name: 'Array: 16, 8, 12, 4' })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Compare first index' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Compare second index' }), { target: { value: '2' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Comparison operator' }), { target: { value: '<' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Compare values' }))
+    expect(screen.getByText('Comparison: 8 < 12 → true')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Swap first index' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Swap second index' }), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Swap values' }))
+    expect(screen.getByRole('button', { name: 'Array: 16, 12, 8, 4' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pointer l, index 0' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pointer r, index 3' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Array: 16, 8, 12, 4' })).toBeInTheDocument()
+    expect(screen.getByText('Comparison: 8 < 12 → true')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByRole('button', { name: 'Array: 16, 12, 8, 4' })).toBeInTheDocument()
+    expect(screen.queryByText('Comparison: 8 < 12 → true')).not.toBeInTheDocument()
+  })
 })

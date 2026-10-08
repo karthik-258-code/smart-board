@@ -1,16 +1,159 @@
+import { useState } from 'react'
 import type { BoardObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
+
+export type ComparisonSummary = {
+  arrayId: string
+  firstValue: string | number
+  secondValue: string | number
+  operator: '<' | '=' | '>'
+  result: boolean
+}
+
+function parseArrayValue(raw: string): string | number {
+  return raw.trim() !== '' && Number.isFinite(Number(raw)) ? Number(raw) : raw
+}
+
+function isValidIndex(index: number, length: number): boolean {
+  return Number.isInteger(index) && index >= 0 && index < length
+}
+
+function ArrayControls({ object, onOperation, comparison }: { object: Extract<BoardObject, { type: 'array' }>; onOperation: (operation: BoardOperation) => void; comparison: ComparisonSummary | null }) {
+  const [insertIndex, setInsertIndex] = useState(String(object.values.length))
+  const [insertValue, setInsertValue] = useState('')
+  const index = Number(insertIndex)
+  const canInsert = insertIndex.trim() !== '' && Number.isInteger(index) && index >= 0 && index <= object.values.length
+  const [compareFirst, setCompareFirst] = useState('0')
+  const [compareSecond, setCompareSecond] = useState(String(Math.min(1, Math.max(0, object.values.length - 1))))
+  const [comparisonOperator, setComparisonOperator] = useState<'<' | '=' | '>'>('=')
+  const [swapFirst, setSwapFirst] = useState('0')
+  const [swapSecond, setSwapSecond] = useState(String(Math.max(0, object.values.length - 1)))
+  const [assignmentIndex, setAssignmentIndex] = useState('0')
+  const [assignedValue, setAssignedValue] = useState('')
+  const firstComparisonIndex = Number(compareFirst)
+  const secondComparisonIndex = Number(compareSecond)
+  const comparisonIndicesValid = compareFirst.trim() !== '' && compareSecond.trim() !== ''
+    && isValidIndex(firstComparisonIndex, object.values.length) && isValidIndex(secondComparisonIndex, object.values.length)
+  const comparisonTypesValid = comparisonOperator === '=' || (
+    typeof object.values[firstComparisonIndex] === 'number' && typeof object.values[secondComparisonIndex] === 'number'
+  )
+  const swapFirstIndex = Number(swapFirst)
+  const swapSecondIndex = Number(swapSecond)
+  const swapIndicesValid = swapFirst.trim() !== '' && swapSecond.trim() !== ''
+    && isValidIndex(swapFirstIndex, object.values.length) && isValidIndex(swapSecondIndex, object.values.length)
+  const assignmentTargetIndex = Number(assignmentIndex)
+  const assignmentIndexValid = assignmentIndex.trim() !== '' && isValidIndex(assignmentTargetIndex, object.values.length)
+
+  function insertValueAtIndex() {
+    if (!canInsert) return
+    onOperation({ type: 'array/insert-value', objectId: object.id, index, value: parseArrayValue(insertValue) })
+    setInsertIndex(String(index + 1))
+    setInsertValue('')
+  }
+
+  return (
+    <div className="array-controls">
+      <p className="inspector-value">{object.values.length ? 'Edit values and mark the indexes in focus.' : 'Empty array. Add a value to begin stepping through it.'}</p>
+      <label className="field-control">Value to insert
+        <input aria-label="Value to insert" type="text" value={insertValue} onChange={(event) => setInsertValue(event.target.value)} />
+      </label>
+      <label className="field-control">Insert at index
+        <input aria-label="Insert at index" type="number" min="0" max={object.values.length} value={insertIndex} onChange={(event) => setInsertIndex(event.target.value)} />
+      </label>
+      <button type="button" disabled={!canInsert} onClick={insertValueAtIndex}>Insert value</button>
+      <div className="array-action-group">
+        <h3>Compare</h3>
+        <div className="array-index-pair">
+          <label className="field-control">First index
+            <input aria-label="Compare first index" type="number" min="0" max={Math.max(0, object.values.length - 1)} value={compareFirst} onChange={(event) => setCompareFirst(event.target.value)} />
+          </label>
+          <label className="field-control">Second index
+            <input aria-label="Compare second index" type="number" min="0" max={Math.max(0, object.values.length - 1)} value={compareSecond} onChange={(event) => setCompareSecond(event.target.value)} />
+          </label>
+        </div>
+        <label className="field-control">Comparison operator
+          <select aria-label="Comparison operator" value={comparisonOperator} onChange={(event) => setComparisonOperator(event.target.value as '<' | '=' | '>')}>
+            <option value="=">=</option>
+            <option value="<">&lt;</option>
+            <option value=">">&gt;</option>
+          </select>
+        </label>
+        <button type="button" disabled={!comparisonIndicesValid || !comparisonTypesValid} onClick={() => onOperation({
+          type: 'array/compare-values', objectId: object.id, firstIndex: firstComparisonIndex, secondIndex: secondComparisonIndex, operator: comparisonOperator,
+        })}>Compare values</button>
+        {comparison?.arrayId === object.id && (
+          <p className="comparison-result" role="status">
+            Comparison: {comparison.firstValue} {comparison.operator} {comparison.secondValue} → {String(comparison.result)}
+          </p>
+        )}
+      </div>
+      <div className="array-action-group">
+        <h3>Swap</h3>
+        <div className="array-index-pair">
+          <label className="field-control">First index
+            <input aria-label="Swap first index" type="number" min="0" max={Math.max(0, object.values.length - 1)} value={swapFirst} onChange={(event) => setSwapFirst(event.target.value)} />
+          </label>
+          <label className="field-control">Second index
+            <input aria-label="Swap second index" type="number" min="0" max={Math.max(0, object.values.length - 1)} value={swapSecond} onChange={(event) => setSwapSecond(event.target.value)} />
+          </label>
+        </div>
+        <button type="button" disabled={!swapIndicesValid} onClick={() => onOperation({
+          type: 'array/swap-values', objectId: object.id, firstIndex: swapFirstIndex, secondIndex: swapSecondIndex,
+        })}>Swap values</button>
+      </div>
+      <div className="array-action-group">
+        <h3>Assign</h3>
+        <label className="field-control">Assign index
+          <input aria-label="Assign index" type="number" min="0" max={Math.max(0, object.values.length - 1)} value={assignmentIndex} onChange={(event) => setAssignmentIndex(event.target.value)} />
+        </label>
+        <label className="field-control">Assigned value
+          <input aria-label="Assigned value" type="text" value={assignedValue} onChange={(event) => setAssignedValue(event.target.value)} />
+        </label>
+        <button type="button" disabled={!assignmentIndexValid} onClick={() => {
+          onOperation({ type: 'array/set-value', objectId: object.id, index: assignmentTargetIndex, value: parseArrayValue(assignedValue) })
+          setAssignedValue('')
+        }}>Assign value</button>
+      </div>
+      {object.values.map((value, index) => (
+        <div className="array-control-row" key={index}>
+          <label className="field-control">Array value at index {index}
+            <input type="text" aria-label={`Array value at index ${index}`} value={String(value)} onChange={(event) => onOperation({ type: 'array/set-value', objectId: object.id, index, value: parseArrayValue(event.target.value) })} />
+          </label>
+          <div className="array-row-actions">
+            <label className="highlight-toggle">
+              <input
+                type="checkbox"
+                aria-label={`Highlight index ${index} (${value})`}
+                checked={object.highlightedIndices.includes(index)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                    ? [...object.highlightedIndices, index]
+                    : object.highlightedIndices.filter((item) => item !== index)
+                  onOperation({ type: 'array/set-highlight', objectId: object.id, indices: next })
+                }}
+              />
+              Highlight
+            </label>
+            <button className="array-remove-button" type="button" aria-label={`Remove index ${index}`} onClick={() => onOperation({ type: 'array/remove-value', objectId: object.id, index })}>Remove</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function BoardInspector({
   object,
   onOperation,
   onDuplicate,
   onRemove,
+  comparison,
 }: {
   object: BoardObject | null
   onOperation: (operation: BoardOperation) => void
   onDuplicate: (object: BoardObject) => void
   onRemove: (objectId: string) => void
+  comparison: ComparisonSummary | null
 }) {
   return (
     <aside className="board-inspector" role="complementary" aria-label="Object inspector" aria-live="polite">
@@ -26,34 +169,7 @@ export function BoardInspector({
             </label>
           )}
           {object.type === 'array' && (
-            <div className="array-controls">
-              <p className="inspector-value">{object.values.length ? 'Edit values and mark the indexes in focus.' : 'Empty array. Add a value to begin stepping through it.'}</p>
-              {object.values.map((value, index) => (
-                <div className="array-control-row" key={index}>
-                  <label className="field-control">Array value at index {index}
-                    <input type="text" aria-label={`Array value at index ${index}`} value={String(value)} onChange={(event) => {
-                      const raw = event.target.value
-                      const numeric = raw.trim() !== '' && Number.isFinite(Number(raw))
-                      onOperation({ type: 'array/set-value', objectId: object.id, index, value: numeric ? Number(raw) : raw })
-                    }} />
-                  </label>
-                  <label className="highlight-toggle">
-                    <input
-                      type="checkbox"
-                      aria-label={`Highlight index ${index} (${value})`}
-                      checked={object.highlightedIndices.includes(index)}
-                      onChange={(event) => {
-                        const next = event.target.checked
-                          ? [...object.highlightedIndices, index]
-                          : object.highlightedIndices.filter((item) => item !== index)
-                        onOperation({ type: 'array/set-highlight', objectId: object.id, indices: next })
-                      }}
-                    />
-                    Highlight
-                  </label>
-                </div>
-              ))}
-            </div>
+            <ArrayControls key={object.id} object={object} onOperation={onOperation} comparison={comparison} />
           )}
           {object.type === 'pointer' && (
             <>

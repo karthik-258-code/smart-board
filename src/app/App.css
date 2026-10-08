@@ -65,7 +65,8 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .board-canvas { position: relative; flex: 1; min-height: 32rem; overflow: auto; background-color: var(--surface-muted); background-image: radial-gradient(color-mix(in srgb, var(--ink-soft) 35%, transparent) 0.75px, transparent 0.75px); background-position: 9px 9px; background-size: 22px 22px; }
 .board-drawing { display: block; width: 100%; min-width: 720px; min-height: 32rem; height: 100%; overflow: visible; }
 .canvas-empty { position: absolute; inset: 0; display: grid; margin: 0; place-items: center; color: var(--ink-soft); font-size: 0.92rem; pointer-events: none; }
-.board-object { cursor: pointer; outline: none; }
+.board-object { cursor: grab; outline: none; touch-action: none; }
+.board-object.is-dragging { cursor: grabbing; }
 .board-object:focus-visible { filter: drop-shadow(0 0 5px var(--accent)); }
 .board-note { fill: var(--note); stroke: var(--line); stroke-width: 1.5; }
 .board-note-fold { fill: var(--note-fold); stroke: var(--line); stroke-width: 1.2; }
@@ -92,11 +93,17 @@ marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .inspector-fields { display: flex; flex-direction: column; gap: 0.8rem; padding-top: 0.85rem; }
 .array-controls { display: flex; flex-direction: column; gap: 0.65rem; }
 .array-controls .inspector-value { margin: 0; }
+.array-action-group { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.65rem; border-top: 1px solid var(--line); }
+.array-action-group h3 { margin: 0; font-size: 0.78rem; }
+.array-index-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+.comparison-result { margin: 0; color: var(--accent); font-size: 0.78rem; font-weight: 700; }
 .array-control-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.4rem; }
+.array-row-actions { display: flex; align-items: center; gap: 0.35rem; }
+.array-remove-button { min-height: 2rem; padding: 0.3rem 0.45rem; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--danger); font: inherit; font-size: 0.7rem; cursor: pointer; }
 .highlight-toggle { display: flex; min-height: 2.35rem; align-items: center; gap: 0.25rem; color: var(--ink-soft); font-size: 0.68rem; }
 .highlight-toggle input { width: 1rem; height: 1rem; accent-color: var(--accent); }
 .field-control { display: flex; min-width: 0; flex-direction: column; gap: 0.38rem; color: var(--ink-soft); font-size: 0.76rem; font-weight: 650; }
-.field-control textarea, .field-control input { box-sizing: border-box; width: 100%; min-height: 2.35rem; padding: 0.55rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-muted); color: var(--ink); font: inherit; font-size: 0.84rem; }
+.field-control textarea, .field-control input, .field-control select { box-sizing: border-box; width: 100%; min-height: 2.35rem; padding: 0.55rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-muted); color: var(--ink); font: inherit; font-size: 0.84rem; }
 .field-control textarea { resize: vertical; }
 .position-fields { gap: 0.55rem; align-items: start; }
 .position-fields .field-control { flex: 1; }

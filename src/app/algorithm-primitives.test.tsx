@@ -48,4 +48,45 @@ describe('algorithm primitives', () => {
     expect(screen.getByRole('button', { name: 'Pointer i, index 0' })).toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Board canvas' })).getAllByRole('button', { name: /Array:/ })).toHaveLength(2)
   })
+
+  it('renders an empty array as a visible selectable board object', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add empty array' }))
+
+    const emptyArray = screen.getByRole('button', { name: 'Array: empty' })
+    expect(emptyArray.querySelector('.array-empty-cell')).toBeInTheDocument()
+    expect(within(emptyArray).getByText('empty')).toBeInTheDocument()
+    fireEvent.click(emptyArray)
+    expect(screen.getByText(/Empty array\. Add a value/)).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Value to insert' }), { target: { value: 'hello' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert value' }))
+    expect(screen.getByRole('button', { name: 'Array: hello' })).toBeInTheDocument()
+  })
+
+  it('inserts array values at any index and removes the chosen index', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Value to insert' }), { target: { value: '16' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert value' }))
+    expect(screen.getByRole('button', { name: 'Array: 4, 8, 12, 16' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Insert at index' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Value to insert' }), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert value' }))
+    expect(screen.getByRole('button', { name: 'Array: 4, 6, 8, 12, 16' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove index 1' }))
+    expect(screen.getByRole('button', { name: 'Array: 4, 8, 12, 16' })).toBeInTheDocument()
+  })
+
+  it('assigns an array value through a single explicit action', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Assign index' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Assigned value' }), { target: { value: '25' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Assign value' }))
+
+    expect(screen.getByRole('button', { name: 'Array: 4, 25, 12' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Array: 4, 8, 12' })).toBeInTheDocument()
+  })
 })

@@ -9,7 +9,7 @@ function labelFor(object: BoardObject): string {
   switch (object.type) {
     case 'note': return `Note: ${object.text || 'New note'}`
     case 'shape': return 'Rectangle'
-    case 'array': return `Array: ${object.values.join(', ')}`
+    case 'array': return object.values.length ? `Array: ${object.values.join(', ')}` : 'Array: empty'
     case 'pointer': return `Pointer ${object.name}, index ${object.index}`
     case 'range': return `Range ${object.name}, ${object.start} to ${object.endExclusive}`
   }
@@ -20,11 +20,19 @@ export function ObjectRenderer({
   objects,
   selected,
   onSelect,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  dragging,
 }: {
   object: BoardObject
   objects: BoardObject[]
   selected: boolean
   onSelect: (id: string) => void
+  onPointerDown: (event: React.PointerEvent<SVGGElement>) => void
+  onPointerMove: (event: React.PointerEvent<SVGGElement>) => void
+  onPointerUp: (event: React.PointerEvent<SVGGElement>) => void
+  dragging: boolean
 }) {
   const target = objects.find((item) => item.id === (object.type === 'pointer' || object.type === 'range' ? object.targetObjectId : ''))
   const handleKeyDown = (event: React.KeyboardEvent<SVGGElement>) => {
@@ -36,7 +44,7 @@ export function ObjectRenderer({
 
   return (
     <g
-      className={`board-object${selected ? ' is-selected' : ''}`}
+      className={`board-object${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}`}
       transform={`translate(${object.position.x} ${object.position.y})`}
       role="button"
       tabIndex={0}
@@ -45,6 +53,9 @@ export function ObjectRenderer({
       data-object-id={object.id}
       onClick={() => onSelect(object.id)}
       onKeyDown={handleKeyDown}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
     >
       {object.type === 'note' && <NoteRenderer object={object} />}
       {object.type === 'shape' && <ShapeRenderer object={object} />}

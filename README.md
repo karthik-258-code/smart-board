@@ -26,8 +26,9 @@ npm run build
 
 The current app supports a manually authored board with:
 
-- Notes, rectangles, arrays, and empty arrays that can be added, selected, moved, duplicated, and removed.
-- Editable array values, index highlights, named pointers, and half-open ranges. Pointer and range positions validate against their target array.
+- Notes, rectangles, arrays, and empty arrays that can be added, selected, dragged, duplicated, and removed.
+- Editable arrays with indexed insertion and removal, assignment, comparison, swapping, and highlights. Comparisons, swaps, and assignments are reversible timeline steps; pointer and range positions stay valid as arrays change.
+- Named pointers and half-open ranges with target-array validation.
 - Reversible operations with undo, redo, step back, step forward, and restart controls.
 - Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
 - Light and dark themes, with accessible names and visible selection states.

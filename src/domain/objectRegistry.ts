@@ -125,7 +125,7 @@ function validateReferences(objects: BoardObject[]): Result<void, BoardError> {
       if (!target || target.type !== 'array') {
         return error('invalid_reference', `${object.type} ${object.id} must target an array.`)
       }
-      if (object.type === 'pointer' && object.index >= target.values.length) {
+      if (object.type === 'pointer' && object.index >= target.values.length && !(target.values.length === 0 && object.index === 0)) {
         return error('invalid_reference', `Pointer ${object.id} is outside its target array.`)
       }
       if (object.type === 'range' && object.endExclusive > target.values.length) {

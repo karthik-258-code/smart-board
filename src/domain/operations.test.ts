@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BoardDocument, BoardObject } from './model'
-import { applyOperation, type BoardOperation } from './operations'
+import { applyOperation, evaluateArrayComparison, type BoardOperation } from './operations'
 
 const array: BoardObject = {
   id: 'array-1', type: 'array', typeVersion: 1, position: { x: 1, y: 2 },
@@ -73,5 +73,66 @@ describe('applyOperation', () => {
 
     expect(result).toMatchObject({ ok: true, value: { document: { objects: [array, { id: 'p', name: 'left' }] }, inverse: { type: 'pointer/set-name', objectId: 'p', name: 'i' } } })
     if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('inserts at the end and shifts highlighted indices, pointers, and ranges', () => {
+    const document = board([
+      { ...array, highlightedIndices: [1] },
+      { id: 'p', type: 'pointer', typeVersion: 1, position: { x: 0, y: 0 }, name: 'i', targetObjectId: 'array-1', index: 2 },
+      { id: 'r', type: 'range', typeVersion: 1, position: { x: 0, y: 0 }, name: 'window', targetObjectId: 'array-1', start: 1, endExclusive: 3 },
+    ])
+    const result = applyOperation(document, { type: 'array/insert-value', objectId: 'array-1', index: 3, value: 40 })
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [
+      { id: 'array-1', values: [10, 20, 30, 40], highlightedIndices: [1] },
+      { id: 'p', index: 2 },
+      { id: 'r', start: 1, endExclusive: 3 },
+    ] } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('removes an index and restores exact marker state on undo, including an empty array', () => {
+    const document = board([
+      { id: 'array-1', type: 'array', typeVersion: 1, position: { x: 1, y: 2 }, values: [10], highlightedIndices: [0] },
+      { id: 'p', type: 'pointer', typeVersion: 1, position: { x: 0, y: 0 }, name: 'i', targetObjectId: 'array-1', index: 0 },
+      { id: 'r', type: 'range', typeVersion: 1, position: { x: 0, y: 0 }, name: 'window', targetObjectId: 'array-1', start: 0, endExclusive: 1 },
+    ])
+    const result = applyOperation(document, { type: 'array/remove-value', objectId: 'array-1', index: 0 })
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [
+      { id: 'array-1', values: [], highlightedIndices: [] },
+      { id: 'p', index: 0 },
+      { id: 'r', start: 0, endExclusive: 0 },
+    ] } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('compares numeric values, highlights both indices, and restores prior highlights on undo', () => {
+    const document = board([{ ...array, highlightedIndices: [2] }])
+    const result = applyOperation(document, { type: 'array/compare-values', objectId: 'array-1', firstIndex: 0, secondIndex: 1, operator: '<' })
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [{ id: 'array-1', highlightedIndices: [0, 1] }] } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('swaps array values as one reversible operation', () => {
+    const document = board()
+    const result = applyOperation(document, { type: 'array/swap-values', objectId: 'array-1', firstIndex: 0, secondIndex: 2 })
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [{ id: 'array-1', values: [30, 20, 10] }] } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('rejects ordering text values and invalid compare indices', () => {
+    const document = board([{ ...array, values: ['left', 'right'] }])
+    expect(applyOperation(document, { type: 'array/compare-values', objectId: 'array-1', firstIndex: 0, secondIndex: 1, operator: '<' })).toMatchObject({ ok: false, error: { code: 'incompatible_values' } })
+    expect(applyOperation(document, { type: 'array/compare-values', objectId: 'array-1', firstIndex: 0, secondIndex: 2, operator: '=' })).toMatchObject({ ok: false, error: { code: 'invalid_index' } })
+  })
+
+  it('uses strict equality for mixed numeric and text values', () => {
+    const document = board([{ ...array, values: [4, '4'] }])
+    const result = applyOperation(document, { type: 'array/compare-values', objectId: 'array-1', firstIndex: 0, secondIndex: 1, operator: '=' })
+    expect(result).toMatchObject({ ok: true })
+    if (result.ok) expect(evaluateArrayComparison(document.objects[0].type === 'array' ? document.objects[0].values : [], { firstIndex: 0, secondIndex: 1, operator: '=' })).toEqual({ ok: true, value: false })
   })
 })

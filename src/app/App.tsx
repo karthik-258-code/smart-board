@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { BoardCanvas } from '../canvas/BoardCanvas'
 import { createEmptyBoard, type BoardObject } from '../domain/model'
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
-import type { BoardOperation } from '../domain/operations'
+import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
 import { loadBoard, saveBoard } from '../persistence/localBoardStore'
-import { BoardInspector } from './BoardInspector'
+import { BoardInspector, type ComparisonSummary } from './BoardInspector'
 import { HistoryControls } from './HistoryControls'
 import { BoardToolbar, type BoardTool } from './BoardToolbar'
 import { SaveStatus, type SaveState } from './SaveStatus'
@@ -87,6 +87,23 @@ function App() {
     : selectedObject?.type === 'pointer' || selectedObject?.type === 'range'
       ? board.objects.find((object) => object.id === selectedObject.targetObjectId && object.type === 'array') as Extract<BoardObject, { type: 'array' }> | undefined ?? null
       : null
+  let comparison: ComparisonSummary | null = null
+  const lastOperation = history.cursor > 0 ? history.entries[history.cursor - 1]?.operation : null
+  if (lastOperation?.type === 'array/compare-values') {
+    const array = board.objects.find((object) => object.id === lastOperation.objectId && object.type === 'array')
+    if (array?.type === 'array') {
+      const result = evaluateArrayComparison(array.values, lastOperation, array.id)
+      if (result.ok) {
+        comparison = {
+          arrayId: array.id,
+          firstValue: array.values[lastOperation.firstIndex],
+          secondValue: array.values[lastOperation.secondIndex],
+          operator: lastOperation.operator,
+          result: result.value,
+        }
+      }
+    }
+  }
 
   function persistSnapshot(nextHistory: HistoryState) {
     if (preserveSavedData) {
@@ -224,10 +241,10 @@ function App() {
       <div className="workspace-layout">
         <BoardToolbar onAdd={addObject} selectedArray={selectedArray} />
         <section className="canvas-frame" aria-label="Board workspace">
-          <div className="canvas-topline"><span>Untitled board</span><span>Click an object to edit</span></div>
+          <div className="canvas-topline"><span>Untitled board</span><span>Drag to move · Click to edit</span></div>
           <BoardCanvas document={board} selectedId={selectedId} onSelect={setSelectedId} onOperation={onOperation} />
         </section>
-        <BoardInspector object={selectedObject} onOperation={onOperation} onDuplicate={duplicateObject} onRemove={removeObject} />
+        <BoardInspector object={selectedObject} onOperation={onOperation} onDuplicate={duplicateObject} onRemove={removeObject} comparison={comparison} />
       </div>
       {error && <p className="operation-error" role="alert">{error}</p>}
     </main>
