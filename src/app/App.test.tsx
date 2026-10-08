@@ -63,6 +63,24 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('button', { name: 'DP table, 3 rows by 3 columns' }).querySelector('.table-dependency')).toBeInTheDocument()
   })
 
+  it('draws strokes as one undoable, saved board object', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Draw' }))
+    expect(screen.getByRole('button', { name: 'Finish drawing' })).toHaveAttribute('aria-pressed', 'true')
+    const svg = screen.getByLabelText('Board objects')
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 600, bottom: 360, width: 600, height: 360, toJSON: () => ({}) })
+    fireEvent.pointerDown(svg, { button: 0, pointerId: 8, clientX: 10, clientY: 20 })
+    fireEvent.pointerMove(svg, { pointerId: 8, clientX: 20, clientY: 30 })
+    fireEvent.pointerUp(svg, { pointerId: 8, clientX: 35, clientY: 45 })
+    const stroke = screen.getByRole('button', { name: 'Freehand drawing' })
+    expect(stroke.querySelector('.board-stroke')).toHaveAttribute('d', 'M 0 0 Q 20 20 35 35 L 50 50')
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({ type: 'stroke', position: { x: 20, y: 40 }, color: 'ink' })
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.queryByRole('button', { name: 'Freehand drawing' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(screen.getByRole('button', { name: 'Freehand drawing' })).toBeInTheDocument()
+  })
+
   it('selects an object and edits its note and position from the inspector', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))

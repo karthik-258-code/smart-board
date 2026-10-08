@@ -27,6 +27,7 @@ npm run build
 The current app supports a manually authored board with:
 
 - Notes, rectangles, arrays, and empty arrays that can be added, selected, dragged, duplicated, and removed.
+- Freehand pen mode for movable, undoable, saveable board strokes.
 - Editable arrays with indexed insertion and removal, assignment, comparison, swapping, and highlights. Comparisons, swaps, and assignments are reversible timeline steps; pointer and range positions stay valid as arrays change.
 - Named pointers and half-open ranges with target-array validation.
 - Reversible operations with undo, redo, step back, step forward, and restart controls.
@@ -36,7 +37,7 @@ The current app supports a manually authored board with:
 - Import and export versioned `.smart-board.json` files for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-This milestone does **not** run code or synchronize runtime variables. Freehand drawing, cloud sharing, and collaboration are future work.
+This milestone does **not** run code or synchronize runtime variables. Cloud sharing and collaboration are future work.
 
 ## Project description
 

@@ -44,8 +44,9 @@ export type TableObject = BaseObject & {
   highlightedCells: TableCoordinate[]
   dependencies: TableDependency[]
 }
+export type StrokeObject = BaseObject & { type: 'stroke'; points: BoardPosition[]; color: 'ink' }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject
 
 export type BoardDocument = {
   id: string

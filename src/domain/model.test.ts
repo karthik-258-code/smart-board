@@ -37,6 +37,16 @@ describe('board document', () => {
     expect(validateBoard(board)).toEqual({ ok: true, value: board })
   })
 
+  it('accepts a stroke with finite local points and fixed ink color', () => {
+    const stroke = { id: 'stroke-1', type: 'stroke', typeVersion: 1, position: { x: 10, y: 20 }, points: [{ x: 0, y: 0 }, { x: 5, y: 8 }], color: 'ink' }
+    expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [stroke] })).toMatchObject({ ok: true })
+    for (const invalid of [
+      { ...stroke, points: [{ x: 0, y: 0 }] },
+      { ...stroke, points: [{ x: Number.NaN, y: 0 }, { x: 2, y: 3 }] },
+      { ...stroke, color: 'red' },
+    ]) expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [invalid] })).toMatchObject({ ok: false })
+  })
+
   it('accepts a table with empty cells, labels, highlights, and dependencies', () => {
     const table = { id: 'dp', type: 'table', typeVersion: 1, position: { x: 0, y: 0 }, rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, 1], ['', 3]], highlightedCells: [{ row: 1, column: 1 }], dependencies: [{ from: { row: 0, column: 1 }, to: { row: 1, column: 1 } }] }
     expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [table] })).toMatchObject({ ok: true, value: { objects: [table] } })

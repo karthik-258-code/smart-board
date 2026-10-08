@@ -8,6 +8,7 @@ import type {
   RangeObject,
   ShapeObject,
   TableObject,
+  StrokeObject,
 } from './model'
 import type { Result } from './result'
 
@@ -104,6 +105,9 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
       }
       return true
     }
+    case 'stroke':
+      return value.color === 'ink' && Array.isArray(value.points) && value.points.length >= 2
+        && value.points.every((point) => isRecord(point) && hasOnlyFields(point, ['x', 'y']) && isFiniteNumber(point.x) && isFiniteNumber(point.y))
   }
 }
 
@@ -156,6 +160,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'table',
     typeVersion: 1,
     validate: (value) => validateObject<TableObject>(value, 'table', ['rowLabels', 'columnLabels', 'cells', 'highlightedCells', 'dependencies']),
+  },
+  stroke: {
+    type: 'stroke',
+    typeVersion: 1,
+    validate: (value) => validateObject<StrokeObject>(value, 'stroke', ['points', 'color']),
   },
 }
 

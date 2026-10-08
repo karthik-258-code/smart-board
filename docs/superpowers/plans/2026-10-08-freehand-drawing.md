@@ -56,3 +56,9 @@
 - Update README implemented features and limits.
 - Run focused tests, full suite, build, and diff check.
 - Commit as `feat: add freehand board drawing`.
+
+## Completion record
+
+- Added validated stroke objects, background pointer capture, smoothed SVG rendering, Draw mode, and generic history/persistence/file sharing integration.
+- Verification: canvas and domain tests passed, full suite passed (88 tests), production build succeeded, and `git diff --check` passed.
+- A click-only gesture and canceled pointer gesture create no object; drawing mode still allows dragging existing objects.

@@ -78,6 +78,7 @@ function App() {
   const [recoveryNeeded, setRecoveryNeeded] = useState(startup.recoveryNeeded)
   const [preserveSavedData, setPreserveSavedData] = useState(startup.recoveryNeeded)
   const [playing, setPlaying] = useState(false)
+  const [drawingMode, setDrawingMode] = useState(false)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
@@ -224,6 +225,11 @@ function App() {
     if (onOperation({ type: 'object/add', object })) setSelectedId(object.id)
   }
 
+  function addStroke(stroke: { position: BoardDocument['objects'][number]['position']; points: Array<{ x: number; y: number }>; color: 'ink' }) {
+    const object: BoardObject = { id: createObjectId(), type: 'stroke', typeVersion: 1, ...stroke }
+    onOperation({ type: 'object/add', object })
+  }
+
   function togglePlayback() {
     if (playing) setPlaying(false)
     else if (history.cursor < history.entries.length) setPlaying(true)
@@ -294,10 +300,10 @@ function App() {
       </div>
 
       <div className="workspace-layout">
-        <BoardToolbar onAdd={addObject} selectedArray={selectedArray} />
+        <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} />
         <section className="canvas-frame" aria-label="Board workspace">
           <div className="canvas-topline"><span>Untitled board</span><span>Drag to move · Click to edit</span></div>
-          <BoardCanvas document={board} selectedId={selectedId} onSelect={setSelectedId} onOperation={onOperation} />
+          <BoardCanvas document={board} selectedId={selectedId} onSelect={setSelectedId} onOperation={onOperation} drawingMode={drawingMode} onCreateStroke={addStroke} />
         </section>
         <BoardInspector object={selectedObject} onOperation={onOperation} onDuplicate={duplicateObject} onRemove={removeObject} comparison={comparison} />
       </div>

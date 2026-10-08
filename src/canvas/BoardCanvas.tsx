@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { BoardDocument } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
+import type { BoardPosition, StrokeObject } from '../domain/model'
 import { ObjectRenderer } from './ObjectRenderer'
 
 type DragState = {
@@ -10,16 +11,21 @@ type DragState = {
   position: { x: number; y: number }
 }
 
+type DrawState = { pointerId: number; points: BoardPosition[] }
+
 export type BoardCanvasProps = {
   document: BoardDocument
   selectedId: string | null
   onSelect: (id: string | null) => void
   onOperation: (operation: BoardOperation) => void
+  drawingMode?: boolean
+  onCreateStroke?: (stroke: Pick<StrokeObject, 'position' | 'points' | 'color'>) => void
 }
 
-export function BoardCanvas({ document, selectedId, onSelect, onOperation }: BoardCanvasProps) {
+export function BoardCanvas({ document, selectedId, onSelect, onOperation, drawingMode = false, onCreateStroke }: BoardCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
+  const [draw, setDraw] = useState<DrawState | null>(null)
 
   function boardPoint(clientX: number, clientY: number) {
     const bounds = svgRef.current?.getBoundingClientRect()
@@ -66,9 +72,46 @@ export function BoardCanvas({ document, selectedId, onSelect, onOperation }: Boa
     }
   }
 
+  function startDraw(event: React.PointerEvent<SVGSVGElement>) {
+    if (!drawingMode || event.target !== event.currentTarget || event.button !== 0) return
+    const point = boardPoint(event.clientX, event.clientY)
+    if (!point) return
+    onSelect(null)
+    setDraw({ pointerId: event.pointerId, points: [point] })
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  function moveDraw(event: React.PointerEvent<SVGSVGElement>) {
+    if (!draw || draw.pointerId !== event.pointerId) return
+    const point = boardPoint(event.clientX, event.clientY)
+    if (!point) return
+    setDraw((current) => {
+      if (!current || current.pointerId !== event.pointerId) return current
+      const last = current.points[current.points.length - 1]
+      if (last.x === point.x && last.y === point.y) return current
+      return { ...current, points: [...current.points, point] }
+    })
+  }
+
+  function finishDraw(event: React.PointerEvent<SVGSVGElement>) {
+    if (!draw || draw.pointerId !== event.pointerId) return
+    const point = boardPoint(event.clientX, event.clientY)
+    const points = point && (point.x !== draw.points.at(-1)?.x || point.y !== draw.points.at(-1)?.y)
+      ? [...draw.points, point]
+      : draw.points
+    setDraw(null)
+    if (points.length < 2) return
+    const origin = points[0]
+    onCreateStroke?.({
+      position: origin,
+      points: points.map((item) => ({ x: item.x - origin.x, y: item.y - origin.y })),
+      color: 'ink',
+    })
+  }
+
   return (
     <section className="board-canvas" role="region" aria-label="Board canvas">
-      <svg className="board-drawing" viewBox="0 0 1200 720" aria-label="Board objects" onClick={(event) => {
+      <svg className={`board-drawing${drawingMode ? ' is-drawing' : ''}`} viewBox="0 0 1200 720" aria-label="Board objects" onPointerDown={startDraw} onPointerMove={moveDraw} onPointerUp={finishDraw} onPointerCancel={() => setDraw(null)} onClick={(event) => {
         if (event.target === event.currentTarget) onSelect(null)
       }} ref={svgRef}>
         <defs>
@@ -96,7 +139,7 @@ export function BoardCanvas({ document, selectedId, onSelect, onOperation }: Boa
           )
         })}
       </svg>
-      {document.objects.length === 0 && <p className="canvas-empty">Add a note, rectangle, or array to begin.</p>}
+      {document.objects.length === 0 && <p className="canvas-empty">Add a note, shape, array, or DP table, or choose Draw to sketch.</p>}
     </section>
   )
 }
