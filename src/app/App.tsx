@@ -18,6 +18,15 @@ function createObjectId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `board-object-${++fallbackId}`
 }
 
+function nextObjectPosition(objects: BoardObject[]) {
+  const occupied = new Set(objects.map((object) => `${object.position.x},${object.position.y}`))
+  for (let slot = 0; slot <= objects.length; slot += 1) {
+    const position = { x: 36 + (slot % 4) * 230, y: 36 + Math.floor(slot / 4) * 150 }
+    if (!occupied.has(`${position.x},${position.y}`)) return position
+  }
+  return { x: 36, y: 36 + objects.length * 150 }
+}
+
 type StartupState = {
   storage: Storage | null
   history: HistoryState
@@ -79,6 +88,32 @@ function App() {
       ? board.objects.find((object) => object.id === selectedObject.targetObjectId && object.type === 'array') as Extract<BoardObject, { type: 'array' }> | undefined ?? null
       : null
 
+  function persistSnapshot(nextHistory: HistoryState) {
+    if (preserveSavedData) {
+      setSaveState('preserved')
+      return
+    }
+    if (!startup.storage) {
+      setSaveState('error')
+      setSaveProblem('Browser storage is unavailable. Changes are only in this session.')
+      return
+    }
+    const current = stateAt(nextHistory, nextHistory.cursor)
+    const saved = current.ok ? saveBoard(startup.storage, storageKey, current.value) : current
+    if (saved.ok) {
+      setSaveState('saved')
+      setSaveProblem(null)
+    } else {
+      setSaveState('error')
+      setSaveProblem(saved.error.message)
+    }
+  }
+
+  function moveHistory(nextHistory: HistoryState) {
+    setHistory(nextHistory)
+    persistSnapshot(nextHistory)
+  }
+
   function onOperation(operation: BoardOperation): boolean {
     const result = dispatchHistory(history, operation)
     if (!result.ok) {
@@ -87,22 +122,7 @@ function App() {
     }
     setHistory(result.value)
     setError(null)
-    if (preserveSavedData) {
-      setSaveState('preserved')
-    } else if (!startup.storage) {
-      setSaveState('error')
-      setSaveProblem('Browser storage is unavailable. Changes are only in this session.')
-    } else {
-      const current = stateAt(result.value, result.value.cursor)
-      const saved = current.ok ? saveBoard(startup.storage, storageKey, current.value) : current
-      if (saved.ok) {
-        setSaveState('saved')
-        setSaveProblem(null)
-      } else {
-        setSaveState('error')
-        setSaveProblem(saved.error.message)
-      }
-    }
+    persistSnapshot(result.value)
     return true
   }
 
@@ -136,8 +156,7 @@ function App() {
   }
 
   function addObject(type: BoardTool) {
-    const index = board.objects.length
-    const position = { x: 36 + (index % 4) * 230, y: 36 + Math.floor(index / 4) * 150 }
+    const position = nextObjectPosition(board.objects)
     let object: BoardObject
     if (type === 'note') object = { id: createObjectId(), type: 'note', typeVersion: 1, position, text: 'New idea' }
     else if (type === 'shape') object = { id: createObjectId(), type: 'shape', typeVersion: 1, position, shapeKind: 'rectangle', width: 150, height: 92 }
@@ -194,11 +213,11 @@ function App() {
         <HistoryControls
           cursor={history.cursor}
           total={history.entries.length}
-          onUndo={() => setHistory((state) => undo(state))}
-          onRedo={() => setHistory((state) => redo(state))}
-          onPrevious={() => setHistory((state) => ({ ...state, cursor: Math.max(0, state.cursor - 1) }))}
-          onNext={() => setHistory((state) => ({ ...state, cursor: Math.min(state.entries.length, state.cursor + 1) }))}
-          onRestart={() => setHistory((state) => ({ ...state, cursor: 0 }))}
+          onUndo={() => moveHistory(undo(history))}
+          onRedo={() => moveHistory(redo(history))}
+          onPrevious={() => moveHistory({ ...history, cursor: Math.max(0, history.cursor - 1) })}
+          onNext={() => moveHistory({ ...history, cursor: Math.min(history.entries.length, history.cursor + 1) })}
+          onRestart={() => moveHistory({ ...history, cursor: 0 })}
         />
       </div>
 

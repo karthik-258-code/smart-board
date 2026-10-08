@@ -29,8 +29,10 @@ describe('manual algorithm board milestone', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 0' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('smart-board:document:v1') ?? '{}').objects.find((item: { id: string }) => item.id === rightId).index).toBe(0)
     fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 2' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('smart-board:document:v1') ?? '{}').objects.find((item: { id: string }) => item.id === rightId).index).toBe(2)
     fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 0' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Next step' }))

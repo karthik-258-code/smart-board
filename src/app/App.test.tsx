@@ -76,4 +76,22 @@ describe('Smart Board app shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start new board' }))
     expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}')).toMatchObject({ schemaVersion: 1, objects: [] })
   })
+
+  it('chooses a free grid position after removing an earlier object', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const notes = screen.getAllByRole('button', { name: 'Note: New idea' })
+    const firstId = notes[0].getAttribute('data-object-id')
+    const remainingId = notes[1].getAttribute('data-object-id')
+    fireEvent.click(notes[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+
+    const allNotes = screen.getAllByRole('button', { name: 'Note: New idea' })
+    const remaining = allNotes.find((note) => note.getAttribute('data-object-id') === remainingId)
+    const added = allNotes.find((note) => note.getAttribute('data-object-id') !== remainingId && note.getAttribute('data-object-id') !== firstId)
+    expect(added).toBeDefined()
+    expect(added?.getAttribute('transform')).not.toBe(remaining?.getAttribute('transform'))
+  })
 })
