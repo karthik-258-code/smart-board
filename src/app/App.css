@@ -42,6 +42,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .workspace-heading p { margin: 0.45rem 0 0; color: var(--ink-soft); font-size: 0.93rem; }
 .history-controls { gap: 0.5rem; }
 .history-controls button { min-width: 4.25rem; }
+.timeline-step { min-width: 6.5rem; color: var(--ink-soft); font-size: 0.78rem; font-variant-numeric: tabular-nums; text-align: center; }
 
 .workspace-layout { display: grid; flex: 1; min-height: 35rem; grid-template-columns: 10.5rem minmax(0, 1fr) 15rem; gap: 1rem; }
 .board-toolbar, .board-inspector, .canvas-frame { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
@@ -49,6 +50,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .board-toolbar { display: flex; flex-direction: column; gap: 0.55rem; }
 .board-toolbar p { margin: 0.2rem 0 0.35rem; color: var(--ink-soft); font-size: 0.73rem; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
 .board-toolbar button { justify-content: flex-start; width: 100%; }
+.toolbar-divider { height: 1px; margin: 0.35rem 0; background: var(--line); }
 .canvas-frame { display: flex; min-height: 35rem; flex-direction: column; overflow: hidden; }
 .canvas-topline { min-height: 2.7rem; gap: 0.8rem; padding: 0 1rem; border-bottom: 1px solid var(--line); color: var(--ink-soft); font-size: 0.75rem; }
 .canvas-topline span:first-child { color: var(--ink); font-weight: 700; }
@@ -80,6 +82,11 @@ marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .object-kind { padding: 0.2rem 0.45rem; border-radius: 5px; background: var(--surface-muted); color: var(--ink-soft); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
 .inspector-empty, .inspector-value { color: var(--ink-soft); font-size: 0.83rem; line-height: 1.5; }
 .inspector-fields { display: flex; flex-direction: column; gap: 0.8rem; padding-top: 0.85rem; }
+.array-controls { display: flex; flex-direction: column; gap: 0.65rem; }
+.array-controls .inspector-value { margin: 0; }
+.array-control-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.4rem; }
+.highlight-toggle { display: flex; min-height: 2.35rem; align-items: center; gap: 0.25rem; color: var(--ink-soft); font-size: 0.68rem; }
+.highlight-toggle input { width: 1rem; height: 1rem; accent-color: var(--accent); }
 .field-control { display: flex; min-width: 0; flex-direction: column; gap: 0.38rem; color: var(--ink-soft); font-size: 0.76rem; font-weight: 650; }
 .field-control textarea, .field-control input { box-sizing: border-box; width: 100%; min-height: 2.35rem; padding: 0.55rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-muted); color: var(--ink); font: inherit; font-size: 0.84rem; }
 .field-control textarea { resize: vertical; }
@@ -91,8 +98,9 @@ marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .operation-error { position: fixed; right: 1rem; bottom: 1rem; max-width: 24rem; margin: 0; padding: 0.8rem 1rem; border: 1px solid var(--danger); border-radius: 10px; background: var(--surface); color: var(--danger); box-shadow: var(--shadow); }
 
 @media (max-width: 980px) {
+  .workspace-heading { flex-wrap: wrap; }
   .workspace-layout { grid-template-columns: 1fr 15rem; }
-  .board-toolbar { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+  .board-toolbar { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; }
   .board-toolbar p { margin: 0 0.3rem 0 0; white-space: nowrap; }
   .board-toolbar button { width: auto; }
   .canvas-frame { grid-column: 1; }
@@ -102,10 +110,13 @@ marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
   .app-shell { gap: 1rem; padding: 0.85rem; }
   .workspace-heading { align-items: start; }
   .workspace-heading p { max-width: 36ch; line-height: 1.45; }
-  .history-controls { display: none; }
+  .history-controls { width: 100%; flex-wrap: wrap; }
+  .history-controls button { min-width: auto; flex: 1; padding-inline: 0.4rem; font-size: 0.72rem; }
+  .timeline-step { order: -1; min-width: 100%; text-align: left; }
   .workspace-layout { display: flex; min-height: 0; flex-direction: column; }
   .board-toolbar { flex-wrap: wrap; }
   .board-toolbar p { flex-basis: 100%; }
+  .toolbar-divider { flex-basis: 100%; }
   .board-toolbar button { flex: 1; padding-inline: 0.5rem; font-size: 0.75rem; }
   .canvas-frame { min-height: 25rem; }
   .board-canvas { min-height: 25rem; }

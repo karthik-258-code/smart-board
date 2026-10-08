@@ -20,8 +20,8 @@ describe('BoardCanvas', () => {
     expect(canvas.getByRole('button', { name: 'Note: Idea' })).toHaveAttribute('aria-pressed', 'true')
     expect(canvas.getByRole('button', { name: 'Rectangle' })).toBeInTheDocument()
     expect(canvas.getByRole('button', { name: 'Array: 4, 7' })).toBeInTheDocument()
-    expect(canvas.getByText('i')).toBeInTheDocument()
-    expect(canvas.getByText('window')).toBeInTheDocument()
+    expect(canvas.getByText(/^i/)).toBeInTheDocument()
+    expect(canvas.getByText(/window/)).toBeInTheDocument()
   })
 
   it('selects objects by pointer and keyboard input', () => {

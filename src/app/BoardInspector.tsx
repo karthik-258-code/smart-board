@@ -25,9 +25,60 @@ export function BoardInspector({
               <textarea aria-label="Note text" value={object.text} onChange={(event) => onOperation({ type: 'note/update-text', objectId: object.id, text: event.target.value })} rows={4} />
             </label>
           )}
-          {object.type === 'array' && <p className="inspector-value">Values: {object.values.join(', ') || 'Empty array'}</p>}
-          {object.type === 'pointer' && <p className="inspector-value">Points to index {object.index}</p>}
-          {object.type === 'range' && <p className="inspector-value">Covers indexes {object.start}–{object.endExclusive}</p>}
+          {object.type === 'array' && (
+            <div className="array-controls">
+              <p className="inspector-value">{object.values.length ? 'Edit values and mark the indexes in focus.' : 'Empty array. Add a value to begin stepping through it.'}</p>
+              {object.values.map((value, index) => (
+                <div className="array-control-row" key={index}>
+                  <label className="field-control">Array value at index {index}
+                    <input type="text" aria-label={`Array value at index ${index}`} value={String(value)} onChange={(event) => {
+                      const raw = event.target.value
+                      const numeric = raw.trim() !== '' && Number.isFinite(Number(raw))
+                      onOperation({ type: 'array/set-value', objectId: object.id, index, value: numeric ? Number(raw) : raw })
+                    }} />
+                  </label>
+                  <label className="highlight-toggle">
+                    <input
+                      type="checkbox"
+                      aria-label={`Highlight index ${index} (${value})`}
+                      checked={object.highlightedIndices.includes(index)}
+                      onChange={(event) => {
+                        const next = event.target.checked
+                          ? [...object.highlightedIndices, index]
+                          : object.highlightedIndices.filter((item) => item !== index)
+                        onOperation({ type: 'array/set-highlight', objectId: object.id, indices: next })
+                      }}
+                    />
+                    Highlight
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+          {object.type === 'pointer' && (
+            <label className="field-control">Pointer index
+              <input aria-label="Pointer index" type="number" value={object.index} onChange={(event) => {
+                const index = Number(event.target.value)
+                if (Number.isInteger(index)) onOperation({ type: 'pointer/move', objectId: object.id, index })
+              }} />
+            </label>
+          )}
+          {object.type === 'range' && (
+            <div className="position-fields">
+              <label className="field-control">Range start
+                <input aria-label="Range start" type="number" value={object.start} onChange={(event) => {
+                  const start = Number(event.target.value)
+                  if (Number.isInteger(start)) onOperation({ type: 'range/set', objectId: object.id, start, endExclusive: object.endExclusive })
+                }} />
+              </label>
+              <label className="field-control">Range end
+                <input aria-label="Range end" type="number" value={object.endExclusive} onChange={(event) => {
+                  const endExclusive = Number(event.target.value)
+                  if (Number.isInteger(endExclusive)) onOperation({ type: 'range/set', objectId: object.id, start: object.start, endExclusive })
+                }} />
+              </label>
+            </div>
+          )}
           {object.type === 'shape' && <p className="inspector-value">{object.width} × {object.height}</p>}
           <div className="position-fields">
             <label className="field-control">Position X
