@@ -4,7 +4,35 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Planning and concept definition. This repository snapshot contains no verified implementation. Features described below are goals or planned capabilities, not claims about an existing product.
+> **Project status:** The first manual board milestone is implemented. Current features and verified run commands are listed below; remaining vision and roadmap sections describe future work.
+
+## Run locally
+
+Requirements: Node.js and npm.
+
+```sh
+npm install
+npm run dev
+```
+
+Run the test suite and production build with:
+
+```sh
+npm run test -- --run
+npm run build
+```
+
+## Implemented first milestone
+
+The current app supports a manually authored board with:
+
+- Notes, rectangles, arrays, and empty arrays that can be added, selected, moved, duplicated, and removed.
+- Editable array values, index highlights, named pointers, and half-open ranges. Pointer and range positions validate against their target array.
+- Reversible operations with undo, redo, step back, step forward, and restart controls.
+- Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
+- Light and dark themes, with accessible names and visible selection states.
+
+This milestone does **not** run code or synchronize runtime variables. Freehand drawing, collaboration, and external sharing are also future work.
 
 ## Project description
 
@@ -257,9 +285,9 @@ Add durable saving, reopening, and sharing workflows once the board document mod
 
 ## Current status
 
-The available project context defines a product concept and planned capabilities. No source code, framework choice, installation instructions, or verified feature implementation was present when this README was prepared. Treat all feature and roadmap sections as proposed until the repository is updated with implementation evidence.
+The manual board described in **Implemented first milestone** is present in the app and covered by tests. The larger product vision and phases below remain proposals. Code execution, runtime variable synchronization, freehand drawing, collaboration, and external sharing are not implemented.
 
-Contributions that help clarify the scope, establish a focused first milestone, or build reusable board primitives would support the project direction.
+Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 
 ## Suggested repository sections
 

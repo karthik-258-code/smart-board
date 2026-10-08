@@ -56,12 +56,17 @@ export function BoardInspector({
             </div>
           )}
           {object.type === 'pointer' && (
-            <label className="field-control">Pointer index
-              <input aria-label="Pointer index" type="number" value={object.index} onChange={(event) => {
-                const index = Number(event.target.value)
-                if (Number.isInteger(index)) onOperation({ type: 'pointer/move', objectId: object.id, index })
-              }} />
-            </label>
+            <>
+              <label className="field-control">Pointer name
+                <input aria-label="Pointer name" type="text" value={object.name} onChange={(event) => onOperation({ type: 'pointer/set-name', objectId: object.id, name: event.target.value })} />
+              </label>
+              <label className="field-control">Pointer index
+                <input aria-label="Pointer index" type="number" value={object.index} onChange={(event) => {
+                  const index = Number(event.target.value)
+                  if (Number.isInteger(index)) onOperation({ type: 'pointer/move', objectId: object.id, index })
+                }} />
+              </label>
+            </>
           )}
           {object.type === 'range' && (
             <div className="position-fields">

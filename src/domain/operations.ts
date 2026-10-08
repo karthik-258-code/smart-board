@@ -10,6 +10,7 @@ export type BoardOperation =
   | { type: 'array/set-value'; objectId: string; index: number; value: string | number }
   | { type: 'array/set-highlight'; objectId: string; indices: number[] }
   | { type: 'pointer/move'; objectId: string; index: number }
+  | { type: 'pointer/set-name'; objectId: string; name: string }
   | { type: 'range/set'; objectId: string; start: number; endExclusive: number }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
@@ -76,6 +77,11 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
       if (current.type !== 'pointer') return fail('incompatible_object', 'Operation requires a pointer.', current.id)
       updated = { ...current, index: operation.index }
       inverse = { type: operation.type, objectId: current.id, index: current.index }
+      break
+    case 'pointer/set-name':
+      if (current.type !== 'pointer') return fail('incompatible_object', 'Operation requires a pointer.', current.id)
+      updated = { ...current, name: operation.name }
+      inverse = { type: operation.type, objectId: current.id, name: current.name }
       break
     case 'range/set':
       if (current.type !== 'range') return fail('incompatible_object', 'Operation requires a range.', current.id)

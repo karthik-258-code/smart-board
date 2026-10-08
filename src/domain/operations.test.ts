@@ -62,4 +62,16 @@ describe('applyOperation', () => {
       expect(document).toEqual(board())
     }
   })
+
+  it('sets a pointer name and returns the prior name as its inverse', () => {
+    const document = board([
+      array,
+      { id: 'p', type: 'pointer', typeVersion: 1, position: { x: 0, y: 0 }, name: 'i', targetObjectId: 'array-1', index: 0 },
+    ])
+    const operation = { type: 'pointer/set-name', objectId: 'p', name: 'left' } as unknown as BoardOperation
+    const result = applyOperation(document, operation)
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [array, { id: 'p', name: 'left' }] }, inverse: { type: 'pointer/set-name', objectId: 'p', name: 'i' } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
 })
