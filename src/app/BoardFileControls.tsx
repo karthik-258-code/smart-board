@@ -1,14 +1,14 @@
 import type { ChangeEvent } from 'react'
-import type { BoardDocument } from '../domain/model'
+import type { HistoryState } from '../domain/history'
 import { parseBoardFile, serializeBoardFile } from '../persistence/boardFile'
 
 export function BoardFileControls({
-  document,
+  history,
   onImport,
   onError,
 }: {
-  document: BoardDocument
-  onImport: (document: BoardDocument) => void
+  history: HistoryState
+  onImport: (history: HistoryState) => void
   onError: (message: string) => void
 }) {
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -30,7 +30,7 @@ export function BoardFileControls({
   }
 
   function exportBoard() {
-    const serialized = serializeBoardFile(document)
+    const serialized = serializeBoardFile(history)
     if (!serialized.ok) {
       onError(serialized.error.message)
       return
@@ -39,7 +39,8 @@ export function BoardFileControls({
     const url = URL.createObjectURL(blob)
     const link = window.document.createElement('a')
     link.href = url
-    link.download = `${document.id.replace(/[^a-zA-Z0-9_-]/g, '-') || 'smart-board'}.smart-board.json`
+    const boardId = history.initialDocument.id
+    link.download = `${boardId.replace(/[^a-zA-Z0-9_-]/g, '-') || 'smart-board'}.smart-board.json`
     window.document.body.append(link)
     link.click()
     link.remove()

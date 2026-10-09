@@ -1,8 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
+import { stateAt, type HistoryState } from '../domain/history'
 
 beforeEach(() => localStorage.clear())
+
+function currentSavedBoard() {
+  const saved = JSON.parse(localStorage.getItem('smart-board:document:v1') ?? '{}')
+  const current = stateAt(saved.history as HistoryState, saved.history.cursor)
+  if (!current.ok) throw new Error(current.error.message)
+  return current.value
+}
 
 describe('manual algorithm board milestone', () => {
   it('creates, edits, replays, and restores a two-pointer range workflow', () => {
@@ -29,10 +37,10 @@ describe('manual algorithm board milestone', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 0' })).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem('smart-board:document:v1') ?? '{}').objects.find((item: { id: string }) => item.id === rightId).index).toBe(0)
+    expect(currentSavedBoard().objects.find((item) => item.id === rightId)).toMatchObject({ index: 0 })
     fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 2' })).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem('smart-board:document:v1') ?? '{}').objects.find((item: { id: string }) => item.id === rightId).index).toBe(2)
+    expect(currentSavedBoard().objects.find((item) => item.id === rightId)).toMatchObject({ index: 2 })
     fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
     expect(screen.getByRole('button', { name: 'Pointer r, index 0' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Next step' }))

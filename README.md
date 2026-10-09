@@ -35,8 +35,8 @@ The current app supports a manually authored board with:
 - Labeled 3×3 DP tables with editable cells, highlights, dependency arrows, and reversible history operations.
 - Prediction checkpoints with authoring, exact answer checking, optional hints, and answer reveal. Learner attempts stay transient.
 - Stack and queue objects with push/pop and enqueue/dequeue actions, correct LIFO/FIFO order, capacity limits, and undo/redo.
-- Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
-- Import and export versioned `.smart-board.json` files for manual sharing. Imports validate before replacement and require confirmation.
+- Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
+- Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
 This milestone does **not** run code or synchronize runtime variables. Cloud sharing and collaboration are future work.
@@ -288,7 +288,7 @@ Choose an initial language and execution approach, then map source lines and sel
 
 ### Phase 6: Persist and share
 
-Local save/restore and manual JSON file sharing are implemented. Cloud links and collaboration remain future work.
+Local save/restore and manual JSON file sharing preserve full timelines. Cloud links and collaboration remain future work.
 
 ## Current status
 

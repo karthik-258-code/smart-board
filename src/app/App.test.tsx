@@ -1,8 +1,20 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { createEmptyBoard } from '../domain/model'
+import { dispatch, stateAt, undo, type HistoryState } from '../domain/history'
+import { serializeBoardFile } from '../persistence/boardFile'
 
 const storageKey = 'smart-board:document:v1'
+
+function savedBoard() {
+  const parsed = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
+  if (parsed.format === 'smart-board-history') {
+    const current = stateAt(parsed.history as HistoryState, parsed.history.cursor)
+    return current.ok ? current.value : null
+  }
+  return parsed
+}
 
 beforeEach(() => localStorage.clear())
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
@@ -48,7 +60,7 @@ describe('Smart Board app shell', () => {
     expect(table.querySelector('.table-cell-highlighted')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Add dependency' }))
     expect(table.querySelector('.table-dependency')).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({
+    expect(savedBoard().objects[0]).toMatchObject({
       type: 'table', cells: [[5, null, null], [null, null, null], [null, null, null]],
       highlightedCells: [{ row: 0, column: 0 }],
       dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }],
@@ -74,7 +86,7 @@ describe('Smart Board app shell', () => {
     fireEvent.pointerUp(svg, { pointerId: 8, clientX: 35, clientY: 45 })
     const stroke = screen.getByRole('button', { name: 'Freehand drawing' })
     expect(stroke.querySelector('.board-stroke')).toHaveAttribute('d', 'M 0 0 Q 20 20 35 35 L 50 50')
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({ type: 'stroke', position: { x: 20, y: 40 }, color: 'ink' })
+    expect(savedBoard().objects[0]).toMatchObject({ type: 'stroke', position: { x: 20, y: 40 }, color: 'ink' })
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(screen.queryByRole('button', { name: 'Freehand drawing' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
@@ -98,7 +110,7 @@ describe('Smart Board app shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close practice' }))
     fireEvent.click(screen.getByRole('button', { name: 'Practice checkpoint' }))
     expect(screen.getByRole('textbox', { name: 'Your prediction' })).toHaveValue('')
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({
+    expect(savedBoard().objects[0]).toMatchObject({
       type: 'checkpoint', prompt: 'What is the next value?', answer: '8', hint: 'Double four.',
     })
   })
@@ -125,7 +137,7 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('button', { name: 'Queue: 7' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(screen.getByRole('button', { name: 'Queue: 3, 7' })).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects).toHaveLength(2)
+    expect(savedBoard().objects).toHaveLength(2)
   })
 
   it('selects an object and edits its note and position from the inspector', () => {
@@ -155,10 +167,33 @@ describe('Smart Board app shell', () => {
 
   it('loads and saves board documents locally', () => {
     localStorage.setItem(storageKey, JSON.stringify({ id: 'saved-board', schemaVersion: 1, objects: [{ id: 'saved-note', type: 'note', typeVersion: 1, position: { x: 4, y: 5 }, text: 'Restore me' }] }))
-    render(<App />)
+    const view = render(<App />)
     expect(screen.getByRole('button', { name: 'Note: Restore me' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects).toHaveLength(2)
+    expect(savedBoard().objects).toHaveLength(2)
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Note: Restore me' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Note: New idea' })).not.toBeInTheDocument()
+  })
+
+  it('restores timeline cursor and redo steps after reload', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'Second state' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Note: New idea' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeEnabled()
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(screen.getByRole('button', { name: 'Note: Second state' })).toBeInTheDocument()
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
   })
 
   it('imports valid board files after confirmation and saves imported data', async () => {
@@ -170,8 +205,29 @@ describe('Smart Board app shell', () => {
     fireEvent.change(screen.getByLabelText('Import board file'), { target: { files: [file] } })
     await waitFor(() => expect(screen.getByRole('button', { name: 'Note: Shared idea' })).toBeInTheDocument())
     expect(screen.queryByRole('button', { name: 'Note: New idea' })).not.toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}')).toEqual(imported)
+    expect(savedBoard()).toEqual(imported)
     expect(screen.getByText('Step 0 of 0')).toBeInTheDocument()
+  })
+
+  it('imports a shared timeline with its redo branch and cursor', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const note = { id: 'lesson-note', type: 'note' as const, typeVersion: 1 as const, position: { x: 0, y: 0 }, text: 'First state' }
+    let history: HistoryState = { initialDocument: { ...createEmptyBoard('lesson'), objects: [note] }, entries: [], cursor: 0 }
+    const second = dispatch(history, { type: 'note/update-text', objectId: note.id, text: 'Second state' })
+    if (!second.ok) throw new Error(second.error.message)
+    const third = dispatch(second.value, { type: 'note/update-text', objectId: note.id, text: 'Third state' })
+    if (!third.ok) throw new Error(third.error.message)
+    history = undo(third.value)
+    const serialized = serializeBoardFile(history)
+    if (!serialized.ok) throw new Error(serialized.error.message)
+    render(<App />)
+    const file = new File([serialized.value], 'lesson.smart-board.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('Import board file'), { target: { files: [file] } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Note: Second state' })).toBeInTheDocument())
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(screen.getByRole('button', { name: 'Note: Third state' })).toBeInTheDocument()
+    expect(savedBoard().objects[0]).toMatchObject({ text: 'Third state' })
   })
 
   it('exports the current board as a JSON download', () => {
@@ -218,7 +274,17 @@ describe('Smart Board app shell', () => {
     expect(localStorage.getItem(storageKey)).toBe(invalidSource)
 
     fireEvent.click(screen.getByRole('button', { name: 'Start new board' }))
-    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}')).toMatchObject({ schemaVersion: 1, objects: [] })
+    expect(savedBoard()).toMatchObject({ schemaVersion: 1, objects: [] })
+  })
+
+  it('preserves a malformed saved timeline until the user chooses recovery', () => {
+    const invalidSource = JSON.stringify({ format: 'smart-board-history', formatVersion: 1, history: { initialDocument: { id: 'bad', schemaVersion: 1, objects: [] }, entries: [], cursor: 1 } })
+    localStorage.setItem(storageKey, invalidSource)
+    render(<App />)
+    expect(screen.getByRole('alert')).toHaveTextContent(/original data is preserved/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Keep saved data' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    expect(localStorage.getItem(storageKey)).toBe(invalidSource)
   })
 
   it('chooses a free grid position after removing an earlier object', () => {

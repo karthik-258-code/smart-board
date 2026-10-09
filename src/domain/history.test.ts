@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from './model'
-import { dispatch, redo, stateAt, undo, type HistoryState } from './history'
+import { dispatch, redo, stateAt, undo, validateHistory, type HistoryState } from './history'
 
 const initial = createEmptyBoard('board-1')
 const add = (id: string, text: string) => ({
@@ -51,5 +51,29 @@ describe('history', () => {
     const state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
     expect(stateAt(state, -1)).toMatchObject({ ok: false })
     expect(stateAt(state, 1)).toMatchObject({ ok: false })
+  })
+
+  it('validates a complete timeline and rejects stale inverse operations', () => {
+    let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
+    state = dispatchOrThrow(state, add('a', 'first'))
+    state = dispatchOrThrow(state, add('b', 'second'))
+    expect(validateHistory(state)).toEqual({ ok: true, value: state })
+    const staleInverse = { ...state, entries: state.entries.map((entry, index) => index === 0 ? { ...entry, inverse: { type: 'object/remove' as const, objectId: 'wrong' } } : entry) }
+    expect(validateHistory(staleInverse)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+  })
+
+  it('rejects invalid cursors, unknown fields, and broken future redo entries', () => {
+    let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
+    state = dispatchOrThrow(state, add('a', 'first'))
+    const invalidCursor = { ...state, cursor: 2 }
+    const unknownField = { ...state, extra: true }
+    const badEntry = {
+      operation: { type: 'object/remove' as const, objectId: 'missing' },
+      inverse: { type: 'object/add' as const, object: { id: 'x', type: 'note' as const, typeVersion: 1 as const, position: { x: 0, y: 0 }, text: '' } },
+    }
+    const brokenRedo = { ...state, entries: [...state.entries, badEntry] }
+    expect(validateHistory(invalidCursor)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+    expect(validateHistory(unknownField)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+    expect(validateHistory(brokenRedo)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
   })
 })

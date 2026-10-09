@@ -55,3 +55,9 @@
 - Update README to describe timeline persistence and legacy compatibility.
 - Run focused tests, full suite, build, and diff check.
 - Commit as `feat: persist board history`.
+
+## Completion record
+
+- Added strict timeline replay validation, local storage envelopes with legacy snapshot loading, and board files that preserve full history.
+- Verified reload restores undo/redo cursor; imported legacy files start at step zero; imported timeline files retain redo branches.
+- Full suite passed (109 tests); production build succeeded; `git diff --check` passed.

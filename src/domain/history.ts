@@ -1,4 +1,5 @@
 import type { BoardDocument } from './model'
+import { validateBoard } from './objectRegistry'
 import { applyOperation } from './operations'
 import type { BoardOperation, OperationError } from './operations'
 import type { Result } from './result'
@@ -6,6 +7,72 @@ import type { Result } from './result'
 export type HistoryEntry = { operation: BoardOperation; inverse: BoardOperation }
 export type HistoryState = { initialDocument: BoardDocument; entries: HistoryEntry[]; cursor: number }
 export type HistoryError = { code: string; message: string }
+
+const operationFields: Record<string, string[]> = {
+  'object/add': ['object'], 'object/remove': ['objectId'], 'object/update-position': ['objectId', 'position'],
+  'note/update-text': ['objectId', 'text'], 'array/set-value': ['objectId', 'index', 'value'],
+  'array/set-highlight': ['objectId', 'indices'], 'array/insert-value': ['objectId', 'index', 'value'],
+  'array/remove-value': ['objectId', 'index'], 'array/restore-state': ['objectId', 'values', 'highlightedIndices', 'references'],
+  'array/swap-values': ['objectId', 'firstIndex', 'secondIndex'], 'array/compare-values': ['objectId', 'firstIndex', 'secondIndex', 'operator'],
+  'pointer/move': ['objectId', 'index'], 'pointer/set-name': ['objectId', 'name'], 'range/set': ['objectId', 'start', 'endExclusive'],
+  'table/set-cell': ['objectId', 'coordinate', 'value'], 'table/set-highlighted-cells': ['objectId', 'coordinates'],
+  'table/add-dependency': ['objectId', 'dependency'], 'table/remove-dependency': ['objectId', 'dependency'],
+  'checkpoint/update': ['objectId', 'prompt', 'answer', 'hint'], 'container/push': ['objectId', 'value'],
+  'container/remove': ['objectId'], 'container/restore-values': ['objectId', 'values'],
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  return Object.keys(value).every((key) => keys.includes(key))
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+  if (isRecord(value)) return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`
+  return JSON.stringify(value) ?? 'undefined'
+}
+
+function invalidHistory(message: string): Result<never, HistoryError> {
+  return { ok: false, error: { code: 'invalid_history', message } }
+}
+
+export function validateHistory(value: unknown): Result<HistoryState, HistoryError> {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['initialDocument', 'entries', 'cursor'])) return invalidHistory('History must contain only an initial document, entries, and cursor.')
+  const initial = validateBoard(value.initialDocument)
+  if (!initial.ok) return invalidHistory(`Initial document is invalid: ${initial.error.message}`)
+  if (!Array.isArray(value.entries) || !Number.isInteger(value.cursor) || Number(value.cursor) < 0 || Number(value.cursor) > value.entries.length) {
+    return invalidHistory('History cursor is outside its entry list.')
+  }
+
+  let document = initial.value
+  const entries: HistoryEntry[] = []
+  for (let index = 0; index < value.entries.length; index += 1) {
+    const entry = value.entries[index]
+    if (!isRecord(entry) || !hasOnlyKeys(entry, ['operation', 'inverse']) || !isRecord(entry.operation) || !isRecord(entry.inverse)) {
+      return invalidHistory(`History entry ${index} is malformed.`)
+    }
+    const operationType = entry.operation.type
+    const inverseType = entry.inverse.type
+    const operationAllowed = typeof operationType === 'string' && operationFields[operationType]
+      && hasOnlyKeys(entry.operation, ['type', ...operationFields[operationType]])
+    const inverseAllowed = typeof inverseType === 'string' && operationFields[inverseType]
+      && hasOnlyKeys(entry.inverse, ['type', ...operationFields[inverseType]])
+    if (!operationAllowed || !inverseAllowed) return invalidHistory(`History entry ${index} contains an unknown or malformed operation.`)
+    try {
+      const applied = applyOperation(document, entry.operation as unknown as BoardOperation)
+      if (!applied.ok) return invalidHistory(`History entry ${index} cannot replay: ${applied.error.message}`)
+      if (stableStringify(entry.inverse) !== stableStringify(applied.value.inverse)) return invalidHistory(`History entry ${index} has an incorrect inverse operation.`)
+      document = applied.value.document
+      entries.push({ operation: entry.operation as unknown as BoardOperation, inverse: applied.value.inverse })
+    } catch {
+      return invalidHistory(`History entry ${index} cannot be replayed.`)
+    }
+  }
+  return { ok: true, value: { initialDocument: initial.value, entries, cursor: Number(value.cursor) } }
+}
 
 export function dispatch(state: HistoryState, operation: BoardOperation): Result<HistoryState, OperationError> {
   const current = stateAt(state, state.cursor)

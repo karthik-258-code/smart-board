@@ -3,7 +3,7 @@ import { BoardCanvas } from '../canvas/BoardCanvas'
 import { createEmptyBoard, type BoardDocument, type BoardObject } from '../domain/model'
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
-import { loadBoard, saveBoard } from '../persistence/localBoardStore'
+import { loadBoardHistory, saveBoardHistory } from '../persistence/localBoardStore'
 import { BoardFileControls } from './BoardFileControls'
 import { PracticeDialog } from './PracticeDialog'
 import { BoardInspector, type ComparisonSummary } from './BoardInspector'
@@ -47,9 +47,9 @@ function loadStartupState(): StartupState {
     return { storage: null, history: { initialDocument: emptyBoard, entries: [], cursor: 0 }, saveState: 'error', problem: 'Browser storage is unavailable.', recoveryNeeded: false }
   }
 
-  const result = loadBoard(storage, storageKey)
+  const result = loadBoardHistory(storage, storageKey)
   if (!result.ok) {
-    const recoveryNeeded = result.error.code === 'invalid_json' || result.error.code === 'invalid_document'
+    const recoveryNeeded = ['invalid_json', 'invalid_document', 'invalid_history'].includes(result.error.code)
     return {
       storage,
       history: { initialDocument: emptyBoard, entries: [], cursor: 0 },
@@ -58,10 +58,10 @@ function loadStartupState(): StartupState {
       recoveryNeeded,
     }
   }
-  const document = result.value ?? emptyBoard
+  const history = result.value ?? { initialDocument: emptyBoard, entries: [], cursor: 0 }
   return {
     storage,
-    history: { initialDocument: document, entries: [], cursor: 0 },
+    history,
     saveState: result.value ? 'saved' : 'new',
     problem: null,
     recoveryNeeded: false,
@@ -122,8 +122,7 @@ function App() {
       setSaveProblem('Browser storage is unavailable. Changes are only in this session.')
       return
     }
-    const current = stateAt(nextHistory, nextHistory.cursor)
-    const saved = current.ok ? saveBoard(startup.storage, storageKey, current.value) : current
+    const saved = saveBoardHistory(startup.storage, storageKey, nextHistory)
     if (saved.ok) {
       setSaveState('saved')
       setSaveProblem(null)
@@ -169,7 +168,8 @@ function App() {
       setSaveProblem('Browser storage is unavailable. The new board is only in this session.')
       return
     }
-    const result = saveBoard(startup.storage, storageKey, document)
+    const nextHistory: HistoryState = { initialDocument: document, entries: [], cursor: 0 }
+    const result = saveBoardHistory(startup.storage, storageKey, nextHistory)
     if (result.ok) {
       setPreserveSavedData(false)
       setRecoveryNeeded(false)
@@ -182,9 +182,9 @@ function App() {
     }
   }
 
-  function importDocument(document: BoardDocument) {
+  function importDocument(importedHistory: HistoryState) {
     setPlaying(false)
-    setHistory({ initialDocument: document, entries: [], cursor: 0 })
+    setHistory(importedHistory)
     setSelectedId(null)
     setError(null)
     setPreserveSavedData(false)
@@ -194,7 +194,7 @@ function App() {
       setSaveProblem('Browser storage is unavailable. The imported board is only in this session.')
       return
     }
-    const saved = saveBoard(startup.storage, storageKey, document)
+    const saved = saveBoardHistory(startup.storage, storageKey, importedHistory)
     if (saved.ok) {
       setSaveState('saved')
       setSaveProblem(null)
@@ -275,7 +275,7 @@ function App() {
         </div>
         <div className="header-actions">
           <span className="board-status">{board.objects.length} {board.objects.length === 1 ? 'object' : 'objects'}</span>
-          <BoardFileControls document={board} onImport={importDocument} onError={setError} />
+          <BoardFileControls history={history} onImport={importDocument} onError={setError} />
           <ThemeControl dark={dark} onToggle={() => setDark((value) => !value)} />
         </div>
       </header>
