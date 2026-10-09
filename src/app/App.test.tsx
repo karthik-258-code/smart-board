@@ -50,6 +50,27 @@ describe('Smart Board app shell', () => {
     expect(canvas.getByRole('button', { name: /Array:/ })).toBeInTheDocument()
   })
 
+  it('adds, edits, reverses, and replays a linked list', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add linked list' }))
+    const canvas = within(screen.getByRole('region', { name: 'Board canvas' }))
+    const list = canvas.getByRole('button', { name: /Linked list/ })
+    expect(list.querySelectorAll('.linked-list-node')).toHaveLength(3)
+    expect(list.querySelectorAll('.linked-list-link')).toHaveLength(2)
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Linked list value' }), { target: { value: '16' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Append node' }))
+    expect(list.querySelectorAll('.linked-list-node')).toHaveLength(4)
+    await waitFor(() => expect(savedBoard().objects[0].nodes.map((node: { value: number }) => node.value)).toEqual([4, 8, 12, 16]))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reverse linked list' }))
+    await waitFor(() => expect(savedBoard().objects[0].nodes.map((node: { value: number }) => node.value)).toEqual([16, 12, 8, 4]))
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(savedBoard().objects[0].nodes.map((node: { value: number }) => node.value)).toEqual([4, 8, 12, 16])
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(savedBoard().objects[0].nodes.map((node: { value: number }) => node.value)).toEqual([16, 12, 8, 4])
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

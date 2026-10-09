@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BoardObject } from '../domain/model'
+import type { BoardObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
 
@@ -13,6 +13,42 @@ export type ComparisonSummary = {
 
 function parseArrayValue(raw: string): string | number {
   return raw.trim() !== '' && Number.isFinite(Number(raw)) ? Number(raw) : raw
+}
+
+let fallbackNodeId = 0
+function createNodeId() {
+  return globalThis.crypto?.randomUUID?.() ?? `list-node-${++fallbackNodeId}`
+}
+
+function LinkedListControls({ object, onOperation }: { object: LinkedListObject; onOperation: (operation: BoardOperation) => void }) {
+  const [value, setValue] = useState('')
+  const [anchor, setAnchor] = useState(object.nodes[0]?.id ?? '')
+  const parsed = parseArrayValue(value)
+  const insert = (afterId: string | null) => {
+    onOperation({ type: 'linked-list/insert', objectId: object.id, afterId, nodeId: createNodeId(), value: parsed })
+    setValue('')
+  }
+  return <div className="array-controls linked-list-controls">
+    <p className="inspector-value">Singly linked list · {object.nodes.length} of 20 nodes</p>
+    <label className="field-control">Node value
+      <input aria-label="Linked list value" value={value} onChange={(event) => setValue(event.target.value)} />
+    </label>
+    <div className="linked-list-actions">
+      <button type="button" disabled={object.nodes.length >= 20} onClick={() => insert(object.nodes.at(-1)?.id ?? null)}>Append node</button>
+      <button type="button" disabled={object.nodes.length >= 20} onClick={() => insert(null)}>Prepend node</button>
+      <button type="button" disabled={object.nodes.length >= 20 || !anchor} onClick={() => insert(anchor)}>Insert after selected</button>
+    </div>
+    <label className="field-control">Insert after
+      <select aria-label="Linked list insertion anchor" value={anchor} onChange={(event) => setAnchor(event.target.value)}>
+        {object.nodes.map((node, index) => <option key={node.id} value={node.id}>{index}: {String(node.value)}</option>)}
+      </select>
+    </label>
+    <button type="button" disabled={object.nodes.length < 2} onClick={() => onOperation({ type: 'linked-list/reverse', objectId: object.id })}>Reverse linked list</button>
+    {object.nodes.map((node, index) => <div className="linked-list-inspector-row" key={node.id}>
+      <span>{index}: {String(node.value)} → {node.nextId ? object.nodes.findIndex((item) => item.id === node.nextId) : 'NULL'}</span>
+      <button type="button" aria-label={`Remove node ${index}`} onClick={() => onOperation({ type: 'linked-list/remove', objectId: object.id, nodeId: node.id })}>Remove</button>
+    </div>)}
+  </div>
 }
 
 function isValidIndex(index: number, length: number): boolean {
@@ -251,6 +287,7 @@ export function BoardInspector({
             <button type="button" disabled={!object.prompt.trim()} onClick={() => onPractice(object.id)}>Practice checkpoint</button>
           </div>}
           {object.type === 'container' && <ContainerControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'linked-list' && <LinkedListControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

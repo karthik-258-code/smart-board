@@ -121,6 +121,9 @@ export function BoardCanvas({ document, selectedId, onSelect, onOperation, drawi
           <marker id="dependency-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
             <path d="M0 0 L0 6 L7 3 z" fill="currentColor" />
           </marker>
+          <marker id="linked-list-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L0 6 L7 3 z" fill="currentColor" />
+          </marker>
         </defs>
         {document.objects.map((object) => {
           const renderedObject = drag?.objectId === object.id ? { ...object, position: drag.position } as typeof object : object

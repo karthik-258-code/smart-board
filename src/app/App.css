@@ -114,6 +114,13 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .container-cell { fill: var(--array-cell); stroke: var(--accent); stroke-width: 1.4; }
 .container-value { fill: var(--ink); font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .container-empty { fill: var(--ink-soft); font-size: 11px; }
+.linked-list-link { stroke: var(--accent); stroke-width: 2; }
+.linked-list-node-value, .linked-list-node-pointer, .linked-list-empty { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.linked-list-node-pointer { fill: var(--accent-soft); }
+.linked-list-node-label { fill: var(--ink); font-size: 14px; font-weight: 750; }
+.linked-list-next-label, .linked-list-index, .linked-list-null-label, .linked-list-empty-label { fill: var(--ink-soft); font-size: 10px; font-weight: 700; }
+.linked-list-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.linked-list-inspector-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding-top: 0.35rem; border-top: 1px solid var(--line); font-size: 0.8rem; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

@@ -8,6 +8,7 @@ import { TableRenderer } from './objectRenderers/TableRenderer'
 import { StrokeRenderer } from './objectRenderers/StrokeRenderer'
 import { CheckpointRenderer } from './objectRenderers/CheckpointRenderer'
 import { ContainerRenderer } from './objectRenderers/ContainerRenderer'
+import { LinkedListRenderer } from './objectRenderers/LinkedListRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -20,6 +21,7 @@ function labelFor(object: BoardObject): string {
     case 'stroke': return 'Freehand drawing'
     case 'checkpoint': return `Checkpoint: ${object.prompt || 'New practice'}`
     case 'container': return `${object.kind === 'stack' ? 'Stack' : 'Queue'}: ${object.values.join(', ') || 'empty'}`
+    case 'linked-list': return `Linked list: ${object.nodes.map((node) => node.value).join(' → ') || 'empty'}`
   }
 }
 
@@ -74,6 +76,7 @@ export function ObjectRenderer({
       {object.type === 'stroke' && <StrokeRenderer object={object} />}
       {object.type === 'checkpoint' && <CheckpointRenderer object={object} />}
       {object.type === 'container' && <ContainerRenderer object={object} />}
+      {object.type === 'linked-list' && <LinkedListRenderer object={object} />}
     </g>
   )
 }

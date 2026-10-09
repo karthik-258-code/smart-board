@@ -25,20 +25,28 @@
 ### Task 1: Model and operations
 **Files:** `src/domain/model.ts`, `src/domain/objectRegistry.ts`, `src/domain/operations.ts`, `src/domain/operations.test.ts`, linked list domain tests.
 
-- [ ] Add linked-list data type, strict shape validation, unique IDs, bounded length, single-chain invariants.
-- [ ] Add insert/remove/reverse operations and exact inverses.
-- [ ] Write failing tests first; confirm invalid mutations and undo/redo behavior.
-- [ ] Run focused domain tests and commit.
+- [x] Add linked-list data type, strict shape validation, unique IDs, bounded length, single-chain invariants.
+- [x] Add insert/remove/reverse operations and exact inverses.
+- [x] Write failing tests first; confirm invalid mutations and undo/redo behavior.
+- [x] Run focused domain tests and commit.
 
 ### Task 2: Rendering and app controls
 **Files:** `src/canvas/objectRenderers/LinkedListRenderer.tsx`, `src/canvas/ObjectRenderer.tsx`, `src/app/BoardToolbar.tsx`, `src/app/BoardInspector.tsx`, `src/app/App.tsx`, app/canvas tests, CSS.
 
-- [ ] Add toolbar action and SVG nodes/arrows with accessible object label.
-- [ ] Add inspector controls for append, prepend, insert-after, and remove.
-- [ ] Test empty/default list, links, interaction, persistence and replay.
-- [ ] Run focused tests and commit.
+- [x] Add toolbar action and SVG nodes/arrows with accessible object label.
+- [x] Add inspector controls for append, prepend, insert-after, reverse, and remove.
+- [x] Test default list, links, interaction, persistence and replay; empty state is rendered explicitly.
+- [x] Run focused tests and commit.
 
 ### Task 3: Docs and verification
-- [ ] Update README and plan completion record.
+- [x] Update README and plan completion record.
 - [ ] Run full test suite, build, and `git diff --check`.
 - [ ] Commit as `feat: add linked list board object`.
+
+## Completion record
+
+- Added a version-1 linked-list object with stable node IDs and validated, acyclic next links.
+- Added append, prepend, insert-after, remove, and reverse operations with exact inverses.
+- Added SVG node/link rendering, inspector controls, toolbar creation, persistence, and replay coverage.
+- Updated strict history validation so linked-list operations persist and reload correctly.
+- Verification: focused tests passed; full suite passed (123 tests across 14 files), production build passed, and `git diff --check` passed.

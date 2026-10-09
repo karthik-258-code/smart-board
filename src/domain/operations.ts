@@ -1,4 +1,4 @@
-import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -25,6 +25,10 @@ export type BoardOperation =
   | { type: 'container/push'; objectId: string; value: string | number }
   | { type: 'container/remove'; objectId: string }
   | { type: 'container/restore-values'; objectId: string; values: Array<string | number> }
+  | { type: 'linked-list/insert'; objectId: string; afterId: string | null; nodeId: string; value: string | number }
+  | { type: 'linked-list/remove'; objectId: string; nodeId: string }
+  | { type: 'linked-list/reverse'; objectId: string }
+  | { type: 'linked-list/restore-nodes'; objectId: string; nodes: LinkedListNode[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -295,6 +299,39 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
       if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
       updated = { ...current, values: operation.values }
       inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+      break
+    case 'linked-list/insert':
+    case 'linked-list/remove':
+    case 'linked-list/reverse':
+    case 'linked-list/restore-nodes':
+      if (current.type !== 'linked-list') return fail('incompatible_object', 'Operation requires a linked list.', current.id)
+      {
+        const priorNodes = current.nodes
+        let nodes = [...current.nodes]
+        if (operation.type === 'linked-list/insert') {
+          if (operation.afterId !== null && typeof operation.afterId !== 'string') return fail('invalid_anchor', 'Insertion anchor must be a node ID or null.', current.id)
+          if (typeof operation.nodeId !== 'string' || typeof operation.value !== 'string' && typeof operation.value !== 'number') return fail('invalid_value', 'Node ID and value are invalid.', current.id)
+          if (nodes.length >= 20) return fail('linked_list_full', 'Linked list cannot hold more than 20 nodes.', current.id)
+          if (!operation.nodeId.trim() || nodes.some((node) => node.id === operation.nodeId)) return fail('duplicate_node_id', 'Node ID must be non-empty and unique.', current.id)
+          if (typeof operation.value === 'number' && !Number.isFinite(operation.value)) return fail('invalid_value', 'Node values must be finite numbers or text.', current.id)
+          const insertAt = operation.afterId === null ? 0 : nodes.findIndex((node) => node.id === operation.afterId) + 1
+          if (operation.afterId !== null && insertAt === 0) return fail('missing_anchor', 'Insertion anchor does not exist.', current.id)
+          nodes.splice(insertAt, 0, { id: operation.nodeId, value: operation.value, nextId: null })
+        } else if (operation.type === 'linked-list/remove') {
+          if (typeof operation.nodeId !== 'string') return fail('missing_node', 'Node ID is invalid.', current.id)
+          const removeAt = nodes.findIndex((node) => node.id === operation.nodeId)
+          if (removeAt < 0) return fail('missing_node', 'Node does not exist.', current.id)
+          nodes.splice(removeAt, 1)
+        } else if (operation.type === 'linked-list/reverse') {
+          nodes.reverse()
+        } else {
+          if (!Array.isArray(operation.nodes)) return fail('invalid_nodes', 'Restored nodes must be a list.', current.id)
+          nodes = operation.nodes
+        }
+        nodes = nodes.map((node, index) => ({ ...node, nextId: nodes[index + 1]?.id ?? null }))
+        updated = { ...current, nodes }
+        inverse = { type: 'linked-list/restore-nodes', objectId: current.id, nodes: priorNodes }
+      }
       break
   }
 

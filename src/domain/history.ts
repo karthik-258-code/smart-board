@@ -19,6 +19,8 @@ const operationFields: Record<string, string[]> = {
   'table/add-dependency': ['objectId', 'dependency'], 'table/remove-dependency': ['objectId', 'dependency'],
   'checkpoint/update': ['objectId', 'prompt', 'answer', 'hint'], 'container/push': ['objectId', 'value'],
   'container/remove': ['objectId'], 'container/restore-values': ['objectId', 'values'],
+  'linked-list/insert': ['objectId', 'afterId', 'nodeId', 'value'], 'linked-list/remove': ['objectId', 'nodeId'],
+  'linked-list/reverse': ['objectId'], 'linked-list/restore-nodes': ['objectId', 'nodes'],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

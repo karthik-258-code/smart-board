@@ -250,6 +250,14 @@ function App() {
     else if (type === 'checkpoint') object = { id: createObjectId(), type: 'checkpoint', typeVersion: 1, position, prompt: '', answer: '', hint: '' }
     else if (type === 'stack') object = { id: createObjectId(), type: 'container', typeVersion: 1, position, kind: 'stack', values: [] }
     else if (type === 'queue') object = { id: createObjectId(), type: 'container', typeVersion: 1, position, kind: 'queue', values: [] }
+    else if (type === 'linked-list') {
+      const ids = [createObjectId(), createObjectId(), createObjectId()]
+      object = { id: createObjectId(), type: 'linked-list', typeVersion: 1, position, nodes: [
+        { id: ids[0], value: 4, nextId: ids[1] },
+        { id: ids[1], value: 8, nextId: ids[2] },
+        { id: ids[2], value: 12, nextId: null },
+      ] }
+    }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

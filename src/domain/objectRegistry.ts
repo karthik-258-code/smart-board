@@ -11,6 +11,7 @@ import type {
   StrokeObject,
   CheckpointObject,
   ContainerObject,
+  LinkedListObject,
 } from './model'
 import type { Result } from './result'
 
@@ -115,6 +116,17 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
     case 'container':
       return (value.kind === 'stack' || value.kind === 'queue') && Array.isArray(value.values) && value.values.length <= 20
         && value.values.every((item) => typeof item === 'string' || isFiniteNumber(item))
+    case 'linked-list': {
+      if (!Array.isArray(value.nodes) || value.nodes.length > 20) return false
+      const nodes = value.nodes
+      if (!nodes.every((node) => isRecord(node) && hasOnlyFields(node, ['id', 'value', 'nextId'])
+        && typeof node.id === 'string' && node.id.trim().length > 0
+        && (typeof node.value === 'string' || isFiniteNumber(node.value))
+        && (node.nextId === null || typeof node.nextId === 'string'))) return false
+      const ids = nodes.map((node) => (node as Record<string, unknown>).id as string)
+      if (new Set(ids).size !== ids.length) return false
+      return nodes.every((node, index) => (node as Record<string, unknown>).nextId === (ids[index + 1] ?? null))
+    }
   }
 }
 
@@ -182,6 +194,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'container',
     typeVersion: 1,
     validate: (value) => validateObject<ContainerObject>(value, 'container', ['kind', 'values']),
+  },
+  'linked-list': {
+    type: 'linked-list',
+    typeVersion: 1,
+    validate: (value) => validateObject<LinkedListObject>(value, 'linked-list', ['nodes']),
   },
 }
 

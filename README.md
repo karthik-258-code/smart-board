@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed-array, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed arrays, linked lists, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -35,6 +35,7 @@ The current app supports a manually authored board with:
 - Labeled 3×3 DP tables with editable cells, highlights, dependency arrows, and reversible history operations.
 - Prediction checkpoints with authoring, exact answer checking, optional hints, and answer reveal. Learner attempts stay transient.
 - Stack and queue objects with push/pop and enqueue/dequeue actions, correct LIFO/FIFO order, capacity limits, and undo/redo.
+- Singly linked lists with stable node IDs, visible next links, append/prepend/insert/remove/reverse actions, and replayable history.
 - Replayable examples for array traversal, binary search, sliding window, and Fibonacci DP.
 - Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
