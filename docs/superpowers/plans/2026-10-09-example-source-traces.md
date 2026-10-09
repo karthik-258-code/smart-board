@@ -22,12 +22,22 @@
 - Loading an unrelated board removes the panel.
 
 ### Task 1: Trace catalog
-- [ ] Add code snippets and cursor-to-line resolver with tests.
+- [x] Add code snippets and cursor-to-line resolver with tests.
 
 ### Task 2: Panel and integration
-- [ ] Add accessible source panel tied to current history cursor.
-- [ ] Test mapping behavior, undo/redo, and example replacement.
+- [x] Add accessible source panel tied to current history cursor.
+- [x] Test mapping behavior, undo/redo, and example replacement.
 
 ### Task 3: Verification
-- [ ] Update README and completion record.
+- [x] Update README and completion record.
 - [ ] Run full suite, build, diff check, and commit.
+
+## Completion record
+
+- Added TypeScript source and per-operation line mappings for all six built-in examples.
+- Added an accessible source panel that follows timeline cursor changes, undo/redo, lesson loads, and saved example histories.
+- Validates the applied operation prefix before showing a mapping; manual branches do not display stale source highlights.
+- Source snippets are read-only and are not executed.
+- Verification: full suite passed (167 tests across 21 files), production build passed, and `git diff --check` passed.
+
+- [x] Run full suite, build, diff check, and commit.

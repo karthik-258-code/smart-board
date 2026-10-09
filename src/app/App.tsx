@@ -5,6 +5,7 @@ import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } f
 import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
 import { loadBoardHistory, saveBoardHistory } from '../persistence/localBoardStore'
 import { buildExampleHistory } from '../examples/catalog'
+import { getCodeTraceForHistory } from '../examples/codeTraces'
 import { BoardFileControls } from './BoardFileControls'
 import { PracticeDialog } from './PracticeDialog'
 import { BoardInspector, type ComparisonSummary } from './BoardInspector'
@@ -12,6 +13,7 @@ import { HistoryControls } from './HistoryControls'
 import { BoardToolbar, type BoardTool } from './BoardToolbar'
 import { SaveStatus, type SaveState } from './SaveStatus'
 import { ThemeControl } from './ThemeControl'
+import { CodeTracePanel } from './CodeTracePanel'
 import './App.css'
 import '../styles/themes.css'
 
@@ -87,6 +89,7 @@ function App() {
     const result = stateAt(history, history.cursor)
     return result.ok ? result.value : history.initialDocument
   }, [history])
+  const traceState = getCodeTraceForHistory(history)
   const selectedObject = board.objects.find((object) => object.id === selectedId) ?? null
   const practiceObject = board.objects.find((object) => object.id === practiceId)
   const practiceCheckpoint = practiceObject?.type === 'checkpoint' ? practiceObject : null
@@ -373,6 +376,8 @@ function App() {
           onRestart={() => moveHistory({ ...history, cursor: 0 })}
         />
       </div>
+
+      {traceState && <CodeTracePanel trace={traceState.trace} currentLine={traceState.currentLine} />}
 
       <div className="workspace-layout">
         <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} onLoadExample={loadExample} />

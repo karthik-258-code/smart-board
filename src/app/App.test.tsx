@@ -175,6 +175,21 @@ describe('Smart Board app shell', () => {
     await waitFor(() => expect(savedBoard().id).toBe('depth-first-search'))
   })
 
+  it('tracks TypeScript source lines as an example timeline moves', () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'binary-search' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load example' }))
+    const sourceElement = screen.getByRole('region', { name: 'Example source code' })
+    const source = within(sourceElement)
+    expect(source.getByText('No mapped line at this step')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(source.getByText('Line 3')).toBeInTheDocument()
+    expect(sourceElement.querySelector('.code-line-current')).toHaveTextContent('const mid')
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(source.getByText('No mapped line at this step')).toBeInTheDocument()
+    expect(sourceElement.querySelector('.code-line-current')).not.toBeInTheDocument()
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

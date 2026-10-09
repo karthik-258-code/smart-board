@@ -43,11 +43,12 @@ The current app supports a manually authored board with:
 - Tries with shared-prefix node rendering and reversible lowercase word insertion/removal.
 - Replayable examples for array traversal, binary search, sliding window, Fibonacci DP, breadth-first search, and depth-first search.
 - Guided lesson sequences for array foundations, windows and dynamic programming, and graph search, with objectives and lesson-step navigation.
+- Read-only TypeScript source traces for built-in examples; the current timeline step highlights its mapped source line, and diverged manual history clears the mapping.
 - Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-This milestone does **not** run code or synchronize runtime variables. Cloud sharing and collaboration are future work.
+This milestone does **not** execute code or synchronize runtime variables. Source-line mapping is explanatory and only covers the built-in replayable examples. Cloud sharing and collaboration are future work.
 
 ## Project description
 
@@ -292,7 +293,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Choose an initial language and execution approach, then map source lines and selected runtime state to board objects. Extend support only where synchronization can remain predictable and useful.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Remaining work: execute a clearly defined subset of code and synchronize selected runtime variables to board objects.
 
 ### Phase 6: Persist and share
 
@@ -300,7 +301,7 @@ Local save/restore and manual JSON file sharing preserve full timelines. Cloud l
 
 ## Current status
 
-The implemented features above are present in the app and covered by tests. Remaining product milestones are a supported code execution/variable synchronization workflow, collaboration, and cloud sharing.
+The implemented features above are present in the app and covered by tests. Remaining product milestones are constrained code execution and variable synchronization, collaboration, and cloud sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

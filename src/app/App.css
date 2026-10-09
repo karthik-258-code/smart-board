@@ -157,6 +157,17 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .lesson-step-header span { color: var(--ink-soft); font-size: 0.7rem; }
 .lesson-picker p { margin: 0; color: var(--ink-soft); font-size: 0.75rem; line-height: 1.4; }
 .lesson-step-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.code-trace-panel { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.code-trace-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.code-trace-heading h2 { margin: 0; font-size: 0.84rem; }
+.code-trace-heading span { color: var(--ink-soft); font-size: 0.68rem; }
+.code-trace-heading > div { display: flex; align-items: baseline; gap: 0.6rem; }
+.code-trace-heading .code-trace-status { color: var(--accent-strong); font-weight: 700; }
+.code-trace-lines { display: flex; flex-direction: column; gap: 1px; max-height: 190px; overflow: auto; margin: 0; padding: 0; list-style: none; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.74rem; }
+.code-line { display: grid; grid-template-columns: 2rem 1fr; gap: 0.5rem; min-height: 1.45rem; padding: 0.08rem 0.35rem; border-radius: 4px; color: var(--ink-soft); }
+.code-line-current { background: var(--accent-soft); color: var(--ink); box-shadow: inset 3px 0 var(--accent-strong); }
+.code-line-number { color: var(--ink-soft); text-align: right; user-select: none; }
+.code-line code { white-space: pre; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }
