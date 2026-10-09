@@ -145,6 +145,23 @@ describe('Smart Board app shell', () => {
     expect(heap.querySelector('.heap-top')).toHaveTextContent('3')
   })
 
+  it('shares trie prefixes and persists word edits', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add trie' }))
+    const trie = within(screen.getByRole('region', { name: 'Board canvas' })).getByRole('button', { name: /Trie:/ })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Trie word' }), { target: { value: 'car' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert word' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Trie word' }), { target: { value: 'cat' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert word' }))
+    await waitFor(() => expect(trie.querySelectorAll('.trie-node')).toHaveLength(5))
+    expect(trie.querySelectorAll('.trie-node[data-prefix="ca"]')).toHaveLength(1)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Trie word' }), { target: { value: 'cart' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert word' }))
+    await waitFor(() => expect(savedBoard().objects[0].words).toEqual(['car', 'cart', 'cat']))
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(savedBoard().objects[0].words).toEqual(['car', 'cat'])
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

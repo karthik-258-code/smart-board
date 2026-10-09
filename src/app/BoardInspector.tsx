@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BinaryTreeObject, BoardObject, GraphObject, HashTableObject, HeapObject, LinkedListObject } from '../domain/model'
+import type { BinaryTreeObject, BoardObject, GraphObject, HashTableObject, HeapObject, LinkedListObject, TrieObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
 import { hashBucketForKey } from '../domain/hashTable'
@@ -167,6 +167,21 @@ function HeapControls({ object, onOperation }: { object: HeapObject; onOperation
       <button type="button" disabled={object.values.length === 0} onClick={() => onOperation({ type: 'heap/extract-top', objectId: object.id })}>Extract top</button>
     </div>
     {object.values.length > 0 && <p className="inspector-value">Top value: {object.values[0]}</p>}
+  </div>
+}
+
+function TrieControls({ object, onOperation }: { object: TrieObject; onOperation: (operation: BoardOperation) => void }) {
+  const [word, setWord] = useState('')
+  const valid = /^[a-z]{1,24}$/.test(word)
+  return <div className="array-controls trie-controls">
+    <p className="inspector-value">{object.words.length} of 50 lowercase words · shared prefixes</p>
+    <label className="field-control">Word
+      <input aria-label="Trie word" value={word} maxLength={24} onChange={(event) => setWord(event.target.value.toLowerCase().replace(/[^a-z]/g, ''))} />
+    </label>
+    <button type="button" disabled={!valid || object.words.includes(word) || object.words.length >= 50} onClick={() => { onOperation({ type: 'trie/insert-word', objectId: object.id, word }); setWord('') }}>Insert word</button>
+    {object.words.map((item) => <div className="graph-node-control" key={item}>
+      <span>{item}</span><button type="button" aria-label={`Remove trie word ${item}`} onClick={() => onOperation({ type: 'trie/remove-word', objectId: object.id, word: item })}>Remove</button>
+    </div>)}
   </div>
 }
 
@@ -411,6 +426,7 @@ export function BoardInspector({
           {object.type === 'binary-tree' && <BinaryTreeControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'hash-table' && <HashTableControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'heap' && <HeapControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'trie' && <TrieControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

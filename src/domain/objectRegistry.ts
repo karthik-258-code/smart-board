@@ -16,6 +16,7 @@ import type {
   BinaryTreeObject,
   HashTableObject,
   HeapObject,
+  TrieObject,
 } from './model'
 import type { Result } from './result'
 
@@ -197,6 +198,10 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
       }
       return true
     }
+    case 'trie':
+      return Array.isArray(value.words) && value.words.length <= 50
+        && value.words.every((word) => typeof word === 'string' && /^[a-z]{1,24}$/.test(word))
+        && new Set(value.words).size === value.words.length
   }
 }
 
@@ -289,6 +294,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'heap',
     typeVersion: 1,
     validate: (value) => validateObject<HeapObject>(value, 'heap', ['kind', 'values']),
+  },
+  trie: {
+    type: 'trie',
+    typeVersion: 1,
+    validate: (value) => validateObject<TrieObject>(value, 'trie', ['words']),
   },
 }
 

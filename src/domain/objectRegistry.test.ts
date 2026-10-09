@@ -3,7 +3,7 @@ import { objectRegistry, validateBoard } from './objectRegistry'
 
 describe('object registry', () => {
   it('registers the supported object types', () => {
-    expect(Object.keys(objectRegistry).sort()).toEqual(['array', 'binary-tree', 'checkpoint', 'container', 'graph', 'hash-table', 'heap', 'linked-list', 'note', 'pointer', 'range', 'shape', 'stroke', 'table'])
+    expect(Object.keys(objectRegistry).sort()).toEqual(['array', 'binary-tree', 'checkpoint', 'container', 'graph', 'hash-table', 'heap', 'linked-list', 'note', 'pointer', 'range', 'shape', 'stroke', 'table', 'trie'])
   })
 
   it('rejects an unsupported object type version', () => {

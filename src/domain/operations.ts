@@ -47,6 +47,9 @@ export type BoardOperation =
   | { type: 'heap/extract-top'; objectId: string }
   | { type: 'heap/set-kind'; objectId: string; kind: HeapObject['kind'] }
   | { type: 'heap/restore'; objectId: string; kind: HeapObject['kind']; values: number[] }
+  | { type: 'trie/insert-word'; objectId: string; word: string }
+  | { type: 'trie/remove-word'; objectId: string; word: string }
+  | { type: 'trie/restore-words'; objectId: string; words: string[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -495,6 +498,29 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         }
         updated = { ...current, kind, values }
         inverse = { type: 'heap/restore', objectId: current.id, ...prior }
+      }
+      break
+    case 'trie/insert-word':
+    case 'trie/remove-word':
+    case 'trie/restore-words':
+      if (current.type !== 'trie') return fail('incompatible_object', 'Operation requires a trie.', current.id)
+      {
+        const priorWords = current.words
+        let words = [...current.words]
+        if (operation.type === 'trie/insert-word') {
+          if (typeof operation.word !== 'string' || !/^[a-z]{1,24}$/.test(operation.word)) return fail('invalid_word', 'Words must contain 1 to 24 lowercase letters.', current.id)
+          if (words.includes(operation.word)) return fail('duplicate_word', 'Word already exists.', current.id)
+          if (words.length >= 50) return fail('trie_full', 'Trie cannot hold more than 50 words.', current.id)
+          words = [...words, operation.word].sort()
+        } else if (operation.type === 'trie/remove-word') {
+          if (!words.includes(operation.word)) return fail('missing_word', 'Word does not exist.', current.id)
+          words = words.filter((word) => word !== operation.word)
+        } else {
+          if (!Array.isArray(operation.words)) return fail('invalid_words', 'Restored words must be a list.', current.id)
+          words = operation.words
+        }
+        updated = { ...current, words }
+        inverse = { type: 'trie/restore-words', objectId: current.id, words: priorWords }
       }
       break
   }

@@ -286,6 +286,7 @@ function App() {
     }
     else if (type === 'hash-table') object = { id: createObjectId(), type: 'hash-table', typeVersion: 1, position, bucketCount: 7, entries: [] }
     else if (type === 'heap') object = { id: createObjectId(), type: 'heap', typeVersion: 1, position, kind: 'min', values: [] }
+    else if (type === 'trie') object = { id: createObjectId(), type: 'trie', typeVersion: 1, position, words: [] }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

@@ -146,6 +146,12 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .heap-node text, .heap-array-cell text { fill: var(--ink); font-size: 11px; font-weight: 750; }
 .heap-top circle { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 3; }
 .heap-array-index { fill: var(--ink-soft) !important; font-size: 9px !important; }
+.trie-title, .trie-empty { fill: var(--ink-soft); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.trie-edge { stroke: var(--line); stroke-width: 2; }
+.trie-node circle { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.trie-node text { fill: var(--ink); font-size: 11px; font-weight: 800; pointer-events: none; }
+.trie-terminal circle:first-child { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 2.5; }
+.trie-node .trie-terminal-mark { fill: var(--accent-strong); stroke: none; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

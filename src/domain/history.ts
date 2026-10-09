@@ -30,6 +30,8 @@ const operationFields: Record<string, string[]> = {
   'hash-table/restore-entries': ['objectId', 'entries'],
   'heap/push': ['objectId', 'value'], 'heap/extract-top': ['objectId'],
   'heap/set-kind': ['objectId', 'kind'], 'heap/restore': ['objectId', 'kind', 'values'],
+  'trie/insert-word': ['objectId', 'word'], 'trie/remove-word': ['objectId', 'word'],
+  'trie/restore-words': ['objectId', 'words'],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

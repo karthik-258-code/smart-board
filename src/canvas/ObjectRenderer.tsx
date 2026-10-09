@@ -13,6 +13,7 @@ import { GraphRenderer } from './objectRenderers/GraphRenderer'
 import { BinaryTreeRenderer } from './objectRenderers/BinaryTreeRenderer'
 import { HashTableRenderer } from './objectRenderers/HashTableRenderer'
 import { HeapRenderer } from './objectRenderers/HeapRenderer'
+import { TrieRenderer } from './objectRenderers/TrieRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -30,6 +31,7 @@ function labelFor(object: BoardObject): string {
     case 'binary-tree': return `Binary tree: ${object.nodes.length} nodes`
     case 'hash-table': return `Hash table: ${object.entries.length} entries in ${object.bucketCount} buckets`
     case 'heap': return `${object.kind === 'min' ? 'Min' : 'Max'} heap: ${object.values.length} values`
+    case 'trie': return `Trie: ${object.words.length} words`
   }
 }
 
@@ -89,6 +91,7 @@ export function ObjectRenderer({
       {object.type === 'binary-tree' && <BinaryTreeRenderer object={object} />}
       {object.type === 'hash-table' && <HashTableRenderer object={object} />}
       {object.type === 'heap' && <HeapRenderer object={object} />}
+      {object.type === 'trie' && <TrieRenderer object={object} />}
     </g>
   )
 }
