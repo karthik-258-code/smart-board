@@ -194,12 +194,14 @@ export function BoardInspector({
   onDuplicate,
   onRemove,
   comparison,
+  onPractice,
 }: {
   object: BoardObject | null
   onOperation: (operation: BoardOperation) => void
   onDuplicate: (object: BoardObject) => void
   onRemove: (objectId: string) => void
   comparison: ComparisonSummary | null
+  onPractice: (objectId: string) => void
 }) {
   return (
     <aside className="board-inspector" role="complementary" aria-label="Object inspector" aria-live="polite">
@@ -218,6 +220,18 @@ export function BoardInspector({
             <ArrayControls key={object.id} object={object} onOperation={onOperation} comparison={comparison} />
           )}
           {object.type === 'table' && <TableControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'checkpoint' && <div className="array-controls">
+            <label className="field-control">Practice prompt
+              <textarea aria-label="Practice prompt" rows={3} value={object.prompt} onChange={(event) => onOperation({ type: 'checkpoint/update', objectId: object.id, prompt: event.target.value, answer: object.answer, hint: object.hint })} />
+            </label>
+            <label className="field-control">Expected answer
+              <input aria-label="Expected answer" value={object.answer} onChange={(event) => onOperation({ type: 'checkpoint/update', objectId: object.id, prompt: object.prompt, answer: event.target.value, hint: object.hint })} />
+            </label>
+            <label className="field-control">Hint
+              <textarea aria-label="Practice hint" rows={2} value={object.hint} onChange={(event) => onOperation({ type: 'checkpoint/update', objectId: object.id, prompt: object.prompt, answer: object.answer, hint: event.target.value })} />
+            </label>
+            <button type="button" disabled={!object.prompt.trim()} onClick={() => onPractice(object.id)}>Practice checkpoint</button>
+          </div>}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

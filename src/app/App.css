@@ -92,6 +92,19 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .board-drawing.is-drawing { cursor: crosshair; touch-action: none; }
 .board-stroke { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.checkpoint-card rect { fill: var(--note); stroke: var(--accent); stroke-width: 1.5; }
+.checkpoint-kicker { fill: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: 0.08em; }
+.checkpoint-prompt { color: var(--ink); font: 650 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+.practice-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; padding: 1rem; place-items: center; background: rgb(12 18 32 / 48%); }
+.practice-dialog { width: min(100%, 27rem); max-height: min(90vh, 44rem); overflow: auto; padding: 1.25rem; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.practice-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.practice-heading p { margin: 0 0 0.25rem; color: var(--accent); font-size: 0.72rem; font-weight: 750; text-transform: uppercase; }
+.practice-heading h2 { margin: 0; font-size: 1.25rem; }
+.practice-prompt { margin: 1.25rem 0; font-size: 1rem; line-height: 1.5; }
+.practice-dialog form { display: flex; flex-direction: column; gap: 0.8rem; }
+.practice-feedback, .practice-reveal { padding: 0.7rem; border-radius: 9px; background: var(--surface-muted); line-height: 1.45; }
+.practice-feedback { color: var(--accent); font-weight: 700; }
+.practice-reveals { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

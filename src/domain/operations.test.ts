@@ -10,6 +10,7 @@ const table: BoardObject = {
   id: 'table-1', type: 'table', typeVersion: 1, position: { x: 0, y: 0 },
   rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, null], [null, null]], highlightedCells: [], dependencies: [],
 }
+const checkpoint: BoardObject = { id: 'check-1', type: 'checkpoint', typeVersion: 1, position: { x: 0, y: 0 }, prompt: 'Next?', answer: '5', hint: 'Count up.' }
 
 function board(objects: BoardObject[] = [array]): BoardDocument {
   return { id: 'board-1', schemaVersion: 1, objects }
@@ -28,6 +29,7 @@ describe('applyOperation', () => {
     { name: 'set table cell', document: board([table]), operation: { type: 'table/set-cell', objectId: 'table-1', coordinate: { row: 1, column: 0 }, value: 7 }, expected: [{ ...table, cells: [[null, null], [7, null]] }] },
     { name: 'highlight table cells', document: board([table]), operation: { type: 'table/set-highlighted-cells', objectId: 'table-1', coordinates: [{ row: 0, column: 1 }] }, expected: [{ ...table, highlightedCells: [{ row: 0, column: 1 }] }] },
     { name: 'add table dependency', document: board([table]), operation: { type: 'table/add-dependency', objectId: 'table-1', dependency: { from: { row: 0, column: 0 }, to: { row: 1, column: 1 } } }, expected: [{ ...table, dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }] }] },
+    { name: 'update checkpoint', document: board([checkpoint]), operation: { type: 'checkpoint/update', objectId: 'check-1', prompt: 'What next?', answer: '6', hint: 'Add one.' }, expected: [{ ...checkpoint, prompt: 'What next?', answer: '6', hint: 'Add one.' }] },
   ]
 
   it.each(cases)('applies and inverses $name', ({ document, operation, expected }) => {

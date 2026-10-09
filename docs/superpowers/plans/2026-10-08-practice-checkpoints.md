@@ -55,3 +55,9 @@
 - Update README current features and Phase 4 remainder.
 - Run focused tests, full suite, build, and diff check.
 - Commit as `feat: add practice checkpoints`.
+
+## Completion record
+
+- Added validated checkpoint objects, reversible author editing, accessible practice modal, exact normalized text feedback, hints, and answer reveal.
+- Verification: focused app/domain tests passed; full suite passed (93 tests); production build succeeded; `git diff --check` passed.
+- Practice responses and reveal state remain transient.

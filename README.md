@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed-array, timeline playback, local persistence, portable board files, and initial DP table milestones are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed-array, timeline playback, local persistence, portable board files, DP tables, freehand drawing, and initial practice checkpoints are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -33,6 +33,7 @@ The current app supports a manually authored board with:
 - Reversible operations with undo, redo, step back, step forward, and restart controls.
 - Timeline autoplay with accessible play/pause and automatic stop at the final step.
 - Labeled 3×3 DP tables with editable cells, highlights, dependency arrows, and reversible history operations.
+- Prediction checkpoints with authoring, exact answer checking, optional hints, and answer reveal. Learner attempts stay transient.
 - Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
@@ -278,7 +279,7 @@ Represent changes as reversible steps and provide controls to run, pause, step, 
 
 ### Phase 4: Expand structures and examples
 
-Initial DP tables and dependency arrows are implemented. Remaining work: linked structures, stacks, queues, trees, heaps, graphs, tries, and hash tables, plus prepared examples.
+Initial DP tables, dependency arrows, and prediction checkpoints are implemented. Remaining work: lesson sequencing, linked structures, stacks, queues, trees, heaps, graphs, tries, hash tables, and prepared examples.
 
 ### Phase 5: Connect supported code
 
@@ -286,11 +287,11 @@ Choose an initial language and execution approach, then map source lines and sel
 
 ### Phase 6: Persist and share
 
-Add durable saving, reopening, and sharing workflows once the board document model is stable.
+Local save/restore and manual JSON file sharing are implemented. Cloud links and collaboration remain future work.
 
 ## Current status
 
-The implemented features above are present in the app and covered by tests. Remaining work includes additional data structures, prepared lessons and practice, code execution and variable synchronization, freehand drawing, collaboration, and external sharing.
+The implemented features above are present in the app and covered by tests. Remaining work includes additional data structures, lesson sequencing and prepared examples, code execution and variable synchronization, collaboration, and cloud sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

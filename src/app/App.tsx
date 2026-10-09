@@ -5,6 +5,7 @@ import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } f
 import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
 import { loadBoard, saveBoard } from '../persistence/localBoardStore'
 import { BoardFileControls } from './BoardFileControls'
+import { PracticeDialog } from './PracticeDialog'
 import { BoardInspector, type ComparisonSummary } from './BoardInspector'
 import { HistoryControls } from './HistoryControls'
 import { BoardToolbar, type BoardTool } from './BoardToolbar'
@@ -79,12 +80,15 @@ function App() {
   const [preserveSavedData, setPreserveSavedData] = useState(startup.recoveryNeeded)
   const [playing, setPlaying] = useState(false)
   const [drawingMode, setDrawingMode] = useState(false)
+  const [practiceId, setPracticeId] = useState<string | null>(null)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
     return result.ok ? result.value : history.initialDocument
   }, [history])
   const selectedObject = board.objects.find((object) => object.id === selectedId) ?? null
+  const practiceObject = board.objects.find((object) => object.id === practiceId)
+  const practiceCheckpoint = practiceObject?.type === 'checkpoint' ? practiceObject : null
   const selectedArray = selectedObject?.type === 'array'
     ? selectedObject
     : selectedObject?.type === 'pointer' || selectedObject?.type === 'range'
@@ -212,6 +216,7 @@ function App() {
       rowLabels: ['0', '1', '2'], columnLabels: ['0', '1', '2'],
       cells: [[null, null, null], [null, null, null], [null, null, null]], highlightedCells: [], dependencies: [],
     }
+    else if (type === 'checkpoint') object = { id: createObjectId(), type: 'checkpoint', typeVersion: 1, position, prompt: '', answer: '', hint: '' }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {
@@ -305,9 +310,10 @@ function App() {
           <div className="canvas-topline"><span>Untitled board</span><span>Drag to move · Click to edit</span></div>
           <BoardCanvas document={board} selectedId={selectedId} onSelect={setSelectedId} onOperation={onOperation} drawingMode={drawingMode} onCreateStroke={addStroke} />
         </section>
-        <BoardInspector object={selectedObject} onOperation={onOperation} onDuplicate={duplicateObject} onRemove={removeObject} comparison={comparison} />
+        <BoardInspector object={selectedObject} onOperation={onOperation} onDuplicate={duplicateObject} onRemove={removeObject} comparison={comparison} onPractice={setPracticeId} />
       </div>
       {error && <p className="operation-error" role="alert">{error}</p>}
+      {practiceCheckpoint && <PracticeDialog key={practiceCheckpoint.id} checkpoint={practiceCheckpoint} onClose={() => setPracticeId(null)} />}
     </main>
   )
 }

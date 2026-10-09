@@ -6,6 +6,7 @@ import { RangeRenderer } from './objectRenderers/RangeRenderer'
 import { ShapeRenderer } from './objectRenderers/ShapeRenderer'
 import { TableRenderer } from './objectRenderers/TableRenderer'
 import { StrokeRenderer } from './objectRenderers/StrokeRenderer'
+import { CheckpointRenderer } from './objectRenderers/CheckpointRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -16,6 +17,7 @@ function labelFor(object: BoardObject): string {
     case 'range': return `Range ${object.name}, ${object.start} to ${object.endExclusive}`
     case 'table': return `DP table, ${object.rowLabels.length} rows by ${object.columnLabels.length} columns`
     case 'stroke': return 'Freehand drawing'
+    case 'checkpoint': return `Checkpoint: ${object.prompt || 'New practice'}`
   }
 }
 
@@ -68,6 +70,7 @@ export function ObjectRenderer({
       {object.type === 'range' && <RangeRenderer object={object} target={target?.type === 'array' ? target : undefined} />}
       {object.type === 'table' && <TableRenderer object={object} />}
       {object.type === 'stroke' && <StrokeRenderer object={object} />}
+      {object.type === 'checkpoint' && <CheckpointRenderer object={object} />}
     </g>
   )
 }

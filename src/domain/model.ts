@@ -45,8 +45,9 @@ export type TableObject = BaseObject & {
   dependencies: TableDependency[]
 }
 export type StrokeObject = BaseObject & { type: 'stroke'; points: BoardPosition[]; color: 'ink' }
+export type CheckpointObject = BaseObject & { type: 'checkpoint'; prompt: string; answer: string; hint: string }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject
 
 export type BoardDocument = {
   id: string

@@ -47,6 +47,12 @@ describe('board document', () => {
     ]) expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [invalid] })).toMatchObject({ ok: false })
   })
 
+  it('accepts checkpoints and rejects malformed prompt data', () => {
+    const checkpoint = { id: 'check-1', type: 'checkpoint', typeVersion: 1, position: { x: 0, y: 0 }, prompt: 'What comes next?', answer: '8', hint: 'Double 4.' }
+    expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [checkpoint] })).toMatchObject({ ok: true })
+    expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [{ ...checkpoint, answer: 4 }] })).toMatchObject({ ok: false })
+  })
+
   it('accepts a table with empty cells, labels, highlights, and dependencies', () => {
     const table = { id: 'dp', type: 'table', typeVersion: 1, position: { x: 0, y: 0 }, rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, 1], ['', 3]], highlightedCells: [{ row: 1, column: 1 }], dependencies: [{ from: { row: 0, column: 1 }, to: { row: 1, column: 1 } }] }
     expect(validateBoard({ id: 'board-1', schemaVersion: 1, objects: [table] })).toMatchObject({ ok: true, value: { objects: [table] } })

@@ -81,6 +81,28 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('button', { name: 'Freehand drawing' })).toBeInTheDocument()
   })
 
+  it('authors a portable checkpoint and opens a fresh practice attempt each time', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add checkpoint' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Practice prompt' }), { target: { value: 'What is the next value?' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Expected answer' }), { target: { value: '8' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Practice hint' }), { target: { value: 'Double four.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Practice checkpoint' }))
+    expect(screen.getByRole('dialog', { name: 'Make a prediction' })).toBeInTheDocument()
+    expect(screen.queryByText('8', { selector: '.practice-reveal' })).not.toBeInTheDocument()
+    const savedCheckpoint = localStorage.getItem(storageKey)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your prediction' }), { target: { value: '8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Check answer' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Correct prediction')
+    expect(localStorage.getItem(storageKey)).toBe(savedCheckpoint)
+    fireEvent.click(screen.getByRole('button', { name: 'Close practice' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Practice checkpoint' }))
+    expect(screen.getByRole('textbox', { name: 'Your prediction' })).toHaveValue('')
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects[0]).toMatchObject({
+      type: 'checkpoint', prompt: 'What is the next value?', answer: '8', hint: 'Double four.',
+    })
+  })
+
   it('selects an object and edits its note and position from the inspector', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))

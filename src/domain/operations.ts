@@ -21,6 +21,7 @@ export type BoardOperation =
   | { type: 'table/set-highlighted-cells'; objectId: string; coordinates: TableCoordinate[] }
   | { type: 'table/add-dependency'; objectId: string; dependency: TableDependency }
   | { type: 'table/remove-dependency'; objectId: string; dependency: TableDependency }
+  | { type: 'checkpoint/update'; objectId: string; prompt: string; answer: string; hint: string }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -263,6 +264,11 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         updated = { ...current, dependencies }
         inverse = { type: operation.type === 'table/add-dependency' ? 'table/remove-dependency' : 'table/add-dependency', objectId: current.id, dependency: operation.dependency }
       }
+      break
+    case 'checkpoint/update':
+      if (current.type !== 'checkpoint') return fail('incompatible_object', 'Operation requires a checkpoint.', current.id)
+      updated = { ...current, prompt: operation.prompt, answer: operation.answer, hint: operation.hint }
+      inverse = { type: operation.type, objectId: current.id, prompt: current.prompt, answer: current.answer, hint: current.hint }
       break
   }
 
