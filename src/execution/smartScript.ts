@@ -226,6 +226,7 @@ export function runBinarySearch(
       if (error) return { ok: false, error }
     }
     variables.mid = Math.floor((variables.low + variables.high) / 2)
+    variables.value = Number(selectedArray.values[variables.mid])
     {
       const error = applyStep(5, [variables.mid], true)
       if (error) return { ok: false, error }
@@ -234,7 +235,8 @@ export function runBinarySearch(
       const error = applyStep(6, [variables.mid], true)
       if (error) return { ok: false, error }
     }
-    const comparison = Number(array.values[variables.mid]) - target
+    variables.comparison = variables.value - target
+    const comparison = variables.comparison
     {
       const error = applyStep(7, [variables.mid])
       if (error) return { ok: false, error }

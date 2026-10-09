@@ -48,7 +48,7 @@ while (low <= high) {
 }
 ```
 
-The selected array must contain finite numeric values sorted in ascending order. The interpreter updates `low`, `high`, and `mid`, and adds `found` when it locates the target. It can move one pointer named `mid` and update one range named `search`; duplicate matching objects are reported as ambiguous. The range shows the active candidate interval and becomes empty when the target is absent.
+The selected array must contain finite numeric values sorted in ascending order. The interpreter updates `low`, `high`, and `mid`, exposes the inspected `value` and numeric `comparison` (`value - target`), and adds `found` when it locates the target. It can move one pointer named `mid` and update one range named `search`; duplicate matching objects are reported as ambiguous. The range shows the active candidate interval and becomes empty when the target is absent.
 
 ## Execution and history
 

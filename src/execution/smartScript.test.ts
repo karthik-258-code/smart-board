@@ -120,6 +120,7 @@ describe('Smart Script binary search', () => {
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
+    expect(result.value.events.filter((event) => event.line === 7).map((event) => [event.variables.mid, event.variables.value, event.variables.comparison])).toEqual([[2, 7, -4], [3, 11, 0]])
     expect(result.value.events.at(-1)).toMatchObject({ line: 9, variables: { low: 3, high: 4, mid: 3, found: 3 } })
     const final = stateAt(result.value.history, result.value.history.cursor)
     expect(final.ok && final.value.objects.find((object) => object.id === 'mid-pointer')).toMatchObject({ index: 3 })
