@@ -9,6 +9,8 @@
   --line: #d8e0ee;
   --accent: #1d4ed8;
   --accent-ink: #ffffff;
+  --accent-strong: #1e40af;
+  --accent-soft: #dbeafe;
   --selection: #1d4ed8;
   --note: #fff2c9;
   --note-fold: #f4d98b;
@@ -31,6 +33,8 @@
   --line: #384760;
   --accent: #91b4ff;
   --accent-ink: #101827;
+  --accent-strong: #c2d5ff;
+  --accent-soft: #263b5e;
   --selection: #a5c1ff;
   --note: #584920;
   --note-fold: #78652a;

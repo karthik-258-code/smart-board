@@ -26,12 +26,14 @@ export function SmartScriptPanel({
   }, [execution])
   const selectedArrayId = arrays.some((array) => array.id === arrayId) ? arrayId : arrays[0]?.id ?? ''
   const currentEvent = execution?.events.find((event) => event.cursor === cursor)
-  const lines = (execution?.source ?? source).split('\n')
+  const traceSource = execution?.source ?? source
+  const binarySearchMode = /^\s*let\s+target\s*=/.test(traceSource)
+  const lines = traceSource.split('\n')
   const status = currentEvent ? `Line ${currentEvent.line}` : execution ? 'Execution complete' : 'Ready to run'
 
   return <section className="code-trace-panel smart-script-panel" role="region" aria-label="Smart Script runner">
     <div className="code-trace-heading">
-      <div><h2>Smart Script</h2><span>Safe subset · array traversal</span></div>
+      <div><h2>Smart Script</h2><span>Safe subset · {binarySearchMode ? 'binary search' : 'array traversal'}</span></div>
       <span className="code-trace-status">{status}</span>
     </div>
     <div className="smart-script-controls">
