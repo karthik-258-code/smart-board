@@ -46,3 +46,11 @@
 
 - [x] Run full tests, production build, and diff check.
 - [x] Commit as `feat: add binary tree board object`.
+
+## Completion record
+
+- Added a validated version-1 binary tree with one root, at most two children per node, connected acyclic structure, and highlight state.
+- Added root/child insertion, recursive subtree removal, and reversible highlights with exact undo/redo state.
+- Added sample tree creation, SVG node/edge rendering, inspector controls, and interaction coverage.
+- Registered strict operation fields for persisted history replay.
+- Verification: full suite passed (142 tests across 16 files), production build passed, and `git diff --check` passed.
