@@ -32,6 +32,31 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('heading', { name: 'Smart Board', level: 1 })).toBeInTheDocument()
   })
 
+  it('runs a bounded array script and follows its source and variable snapshot through history', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByRole('region', { name: 'Smart Script runner' })).toBeInTheDocument()
+    expect(screen.getByText('i = 2')).toBeInTheDocument()
+    expect(screen.getByText('Line 2')).toBeInTheDocument()
+    const array = screen.getByRole('button', { name: 'Array: 4, 8, 12' })
+    expect(array.querySelector('.array-cell-highlighted')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(screen.getByText('i = 1')).toBeInTheDocument()
+  })
+
+  it('shows a line-specific unsupported-script diagnostic without applying partial state', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), { target: { value: 'while (true) {\n  unsafe();\n}' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Line 1: Expected: for (let i = 0; i < values.length; i++) {')
+    expect(screen.getByRole('button', { name: 'Array: 4, 8, 12' }).querySelector('.array-cell-highlighted')).not.toBeInTheDocument()
+  })
+
   it('exposes an accessible board region', () => {
     render(<App />)
 

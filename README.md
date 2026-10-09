@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, queues, and a bounded array-script runner are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -44,11 +44,12 @@ The current app supports a manually authored board with:
 - Replayable examples for array traversal, binary search, sliding window, Fibonacci DP, breadth-first search, and depth-first search.
 - Guided lesson sequences for array foundations, windows and dynamic programming, and graph search, with objectives and lesson-step navigation.
 - Read-only TypeScript source traces for built-in examples; the current timeline step highlights its mapped source line, and diverged manual history clears the mapping.
+- A constrained Smart Script runner for array traversal. It steps a bounded `for` loop, records the index variable, highlights the matching array cell, and moves a matching named pointer through the same reversible board history.
 - Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-This milestone does **not** execute code or synchronize runtime variables. Source-line mapping is explanatory and only covers the built-in replayable examples. Cloud sharing and collaboration are future work.
+Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports a `for (let i = 0; i < values.length; i++)` loop with `highlight(i)`, `highlight(values[i])`, or `visit(values[i])` statements. Source length, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
 
 ## Project description
 
@@ -293,7 +294,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Remaining work: execute a clearly defined subset of code and synchronize selected runtime variables to board objects.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. The Smart Script runner executes a constrained array-traversal subset, shows the current index variable, highlights the visited array cell, and synchronizes a matching named pointer. Remaining work: broader expressions and control flow, more data-structure mappings, richer variable snapshots, and improved runtime controls.
 
 ### Phase 6: Persist and share
 
@@ -301,7 +302,7 @@ Local save/restore and manual JSON file sharing preserve full timelines. Cloud l
 
 ## Current status
 
-The implemented features above are present in the app and covered by tests. Remaining product milestones are constrained code execution and variable synchronization, collaboration, and cloud sharing.
+The implemented features above are present in the app and covered by tests. Remaining product milestones include extending constrained code execution and variable synchronization, collaboration, and cloud sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

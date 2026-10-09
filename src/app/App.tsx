@@ -14,6 +14,8 @@ import { BoardToolbar, type BoardTool } from './BoardToolbar'
 import { SaveStatus, type SaveState } from './SaveStatus'
 import { ThemeControl } from './ThemeControl'
 import { CodeTracePanel } from './CodeTracePanel'
+import { SmartScriptPanel, type SmartScriptView } from './SmartScriptPanel'
+import { runArrayTraversal } from '../execution/smartScript'
 import './App.css'
 import '../styles/themes.css'
 
@@ -84,12 +86,14 @@ function App() {
   const [playing, setPlaying] = useState(false)
   const [drawingMode, setDrawingMode] = useState(false)
   const [practiceId, setPracticeId] = useState<string | null>(null)
+  const [codeExecution, setCodeExecution] = useState<SmartScriptView | null>(null)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
     return result.ok ? result.value : history.initialDocument
   }, [history])
   const traceState = getCodeTraceForHistory(history)
+  const arrays = board.objects.filter((object): object is Extract<BoardObject, { type: 'array' }> => object.type === 'array')
   const selectedObject = board.objects.find((object) => object.id === selectedId) ?? null
   const practiceObject = board.objects.find((object) => object.id === practiceId)
   const practiceCheckpoint = practiceObject?.type === 'checkpoint' ? practiceObject : null
@@ -144,6 +148,7 @@ function App() {
 
   function onOperation(operation: BoardOperation): boolean {
     setPlaying(false)
+    setCodeExecution(null)
     const result = dispatchHistory(history, operation)
     if (!result.ok) {
       setError(result.error.message)
@@ -153,6 +158,22 @@ function App() {
     setError(null)
     persistSnapshot(result.value)
     return true
+  }
+
+  function runScript(source: string, arrayId: string) {
+    const result = runArrayTraversal(source, history, arrayId)
+    if (!result.ok) {
+      setError(`Line ${result.error.line}: ${result.error.message}`)
+      return
+    }
+    setPlaying(false)
+    setError(null)
+    setHistory(result.value.history)
+    persistSnapshot(result.value.history)
+    setCodeExecution({
+      source,
+      events: result.value.events.map((event, index) => ({ ...event, cursor: history.cursor + index + 1 })),
+    })
   }
 
   function keepSavedData() {
@@ -167,6 +188,7 @@ function App() {
     const document = createEmptyBoard('smart-board')
     setHistory({ initialDocument: document, entries: [], cursor: 0 })
     setSelectedId(null)
+    setCodeExecution(null)
     if (!startup.storage) {
       setSaveState('error')
       setSaveProblem('Browser storage is unavailable. The new board is only in this session.')
@@ -191,6 +213,7 @@ function App() {
     setHistory(importedHistory)
     setSelectedId(null)
     setError(null)
+    setCodeExecution(null)
     setPreserveSavedData(false)
     setRecoveryNeeded(false)
     if (!startup.storage) {
@@ -220,6 +243,7 @@ function App() {
     setPracticeId(null)
     setSelectedId(null)
     setError(null)
+    setCodeExecution(null)
     setHistory(result.value)
     setPreserveSavedData(false)
     setRecoveryNeeded(false)
@@ -378,6 +402,7 @@ function App() {
       </div>
 
       {traceState && <CodeTracePanel trace={traceState.trace} currentLine={traceState.currentLine} />}
+      <SmartScriptPanel arrays={arrays} cursor={history.cursor} execution={codeExecution} onRun={runScript} />
 
       <div className="workspace-layout">
         <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} onLoadExample={loadExample} />
