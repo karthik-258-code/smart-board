@@ -1,4 +1,4 @@
-import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import type { ArrayObject, BinaryTreeNode, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -35,6 +35,10 @@ export type BoardOperation =
   | { type: 'graph/remove-edge'; objectId: string; edgeId: string }
   | { type: 'graph/set-highlighted'; objectId: string; nodeIds: string[] }
   | { type: 'graph/restore-state'; objectId: string; nodes: GraphNode[]; edges: GraphEdge[]; highlightedNodeIds: string[] }
+  | { type: 'tree/insert'; objectId: string; node: BinaryTreeNode; parentId: string | null; side: 'root' | 'left' | 'right' }
+  | { type: 'tree/remove-subtree'; objectId: string; nodeId: string }
+  | { type: 'tree/set-highlighted'; objectId: string; nodeIds: string[] }
+  | { type: 'tree/restore-state'; objectId: string; rootId: string | null; nodes: BinaryTreeNode[]; highlightedNodeIds: string[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -382,6 +386,55 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         }
         updated = { ...current, nodes, edges, highlightedNodeIds }
         inverse = { type: 'graph/restore-state', objectId: current.id, ...prior }
+      }
+      break
+    case 'tree/insert':
+    case 'tree/remove-subtree':
+    case 'tree/set-highlighted':
+    case 'tree/restore-state':
+      if (current.type !== 'binary-tree') return fail('incompatible_object', 'Operation requires a binary tree.', current.id)
+      {
+        const prior = { rootId: current.rootId, nodes: current.nodes, highlightedNodeIds: current.highlightedNodeIds }
+        let rootId = current.rootId
+        let nodes = [...current.nodes]
+        let highlightedNodeIds = [...current.highlightedNodeIds]
+        if (operation.type === 'tree/insert') {
+          if (nodes.length >= 30) return fail('tree_full', 'Tree cannot contain more than 30 nodes.', current.id)
+          if (nodes.some((node) => node.id === operation.node.id)) return fail('duplicate_node_id', 'Node ID must be unique.', current.id)
+          if (operation.side === 'root') {
+            if (operation.parentId !== null || rootId !== null || nodes.length > 0) return fail('root_exists', 'Tree already has a root.', current.id)
+            rootId = operation.node.id
+          } else {
+            const parent = nodes.find((node) => node.id === operation.parentId)
+            if (!parent) return fail('missing_parent', 'Parent node does not exist.', current.id)
+            if (parent[operation.side === 'left' ? 'leftId' : 'rightId'] !== null) return fail('child_exists', 'That child slot is already occupied.', current.id)
+            nodes = nodes.map((node) => node.id === parent.id ? { ...parent, [operation.side === 'left' ? 'leftId' : 'rightId']: operation.node.id } : node)
+          }
+          nodes.push(operation.node)
+        } else if (operation.type === 'tree/remove-subtree') {
+          const target = nodes.find((node) => node.id === operation.nodeId)
+          if (!target) return fail('missing_node', 'Tree node does not exist.', current.id)
+          const removedIds = new Set<string>()
+          const collect = (id: string) => {
+            const node = nodes.find((item) => item.id === id)
+            if (!node || removedIds.has(id)) return
+            removedIds.add(id)
+            if (node.leftId) collect(node.leftId)
+            if (node.rightId) collect(node.rightId)
+          }
+          collect(target.id)
+          nodes = nodes.filter((node) => !removedIds.has(node.id)).map((node) => ({ ...node, leftId: node.leftId && removedIds.has(node.leftId) ? null : node.leftId, rightId: node.rightId && removedIds.has(node.rightId) ? null : node.rightId }))
+          highlightedNodeIds = highlightedNodeIds.filter((id) => !removedIds.has(id))
+          if (removedIds.has(rootId ?? '')) rootId = null
+        } else if (operation.type === 'tree/set-highlighted') {
+          highlightedNodeIds = operation.nodeIds
+        } else {
+          rootId = operation.rootId
+          nodes = operation.nodes
+          highlightedNodeIds = operation.highlightedNodeIds
+        }
+        updated = { ...current, rootId, nodes, highlightedNodeIds }
+        inverse = { type: 'tree/restore-state', objectId: current.id, ...prior }
       }
       break
   }

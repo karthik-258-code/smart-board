@@ -13,6 +13,7 @@ import type {
   ContainerObject,
   LinkedListObject,
   GraphObject,
+  BinaryTreeObject,
 } from './model'
 import type { Result } from './result'
 
@@ -147,6 +148,38 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
       return value.highlightedNodeIds.every((id) => typeof id === 'string' && nodeIds.includes(id))
         && new Set(value.highlightedNodeIds).size === value.highlightedNodeIds.length
     }
+    case 'binary-tree': {
+      if (!Array.isArray(value.nodes) || value.nodes.length > 30 || !Array.isArray(value.highlightedNodeIds)) return false
+      const nodes = value.nodes
+      if (nodes.length === 0) return value.rootId === null && value.highlightedNodeIds.length === 0
+      if (!nodes.every((node) => isRecord(node) && hasOnlyFields(node, ['id', 'value', 'leftId', 'rightId', 'position'])
+        && typeof node.id === 'string' && node.id.trim().length > 0
+        && (typeof node.value === 'string' || isFiniteNumber(node.value))
+        && (node.leftId === null || typeof node.leftId === 'string') && (node.rightId === null || typeof node.rightId === 'string')
+        && isRecord(node.position) && hasOnlyFields(node.position, ['x', 'y']) && isFiniteNumber(node.position.x) && isFiniteNumber(node.position.y))) return false
+      const ids = nodes.map((node) => (node as Record<string, unknown>).id as string)
+      if (new Set(ids).size !== ids.length || value.nodes.length === 0 && value.rootId !== null || value.nodes.length > 0 && (typeof value.rootId !== 'string' || !ids.includes(value.rootId))) return false
+      const parents = new Map<string, number>()
+      for (const node of nodes as Array<Record<string, unknown>>) {
+        for (const childId of [node.leftId, node.rightId]) {
+          if (childId === null) continue
+          if (typeof childId !== 'string' || !ids.includes(childId)) return false
+          parents.set(childId, (parents.get(childId) ?? 0) + 1)
+        }
+        if (node.leftId !== null && node.leftId === node.rightId) return false
+      }
+      if (ids.some((id) => id === value.rootId ? parents.has(id) : parents.get(id) !== 1)) return false
+      const visited = new Set<string>()
+      const visit = (id: string): boolean => {
+        if (visited.has(id)) return false
+        visited.add(id)
+        const node = nodes.find((candidate) => (candidate as Record<string, unknown>).id === id) as Record<string, unknown>
+        return [node.leftId, node.rightId].every((childId) => childId === null || visit(childId as string))
+      }
+      return visit(value.rootId as string) && visited.size === nodes.length
+        && value.highlightedNodeIds.every((id) => typeof id === 'string' && ids.includes(id))
+        && new Set(value.highlightedNodeIds).size === value.highlightedNodeIds.length
+    }
   }
 }
 
@@ -224,6 +257,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'graph',
     typeVersion: 1,
     validate: (value) => validateObject<GraphObject>(value, 'graph', ['nodes', 'edges', 'highlightedNodeIds']),
+  },
+  'binary-tree': {
+    type: 'binary-tree',
+    typeVersion: 1,
+    validate: (value) => validateObject<BinaryTreeObject>(value, 'binary-tree', ['rootId', 'nodes', 'highlightedNodeIds']),
   },
 }
 

@@ -131,6 +131,11 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .graph-node-list { margin: 0; padding: 0.5rem; border: 1px solid var(--line); border-radius: 8px; }
 .graph-node-list legend { color: var(--ink-soft); font-size: 0.75rem; font-weight: 700; }
 .graph-node-control { justify-content: space-between; padding: 0.2rem 0; }
+.tree-edge { stroke: var(--line); stroke-width: 2.5; }
+.tree-node circle { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.tree-node text { fill: var(--ink); font-size: 13px; font-weight: 800; pointer-events: none; }
+.tree-node-highlighted circle { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 4; }
+.tree-empty { fill: var(--ink-soft); font-size: 10px; font-weight: 700; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

@@ -272,6 +272,18 @@ function App() {
         ], highlightedNodeIds: [],
       }
     }
+    else if (type === 'binary-tree') {
+      const ids = Array.from({ length: 7 }, () => createObjectId())
+      object = { id: createObjectId(), type: 'binary-tree', typeVersion: 1, position, rootId: ids[0], highlightedNodeIds: [], nodes: [
+        { id: ids[0], value: 8, leftId: ids[1], rightId: ids[2], position: { x: 150, y: 30 } },
+        { id: ids[1], value: 3, leftId: ids[3], rightId: ids[4], position: { x: 75, y: 110 } },
+        { id: ids[2], value: 11, leftId: ids[5], rightId: ids[6], position: { x: 225, y: 110 } },
+        { id: ids[3], value: 1, leftId: null, rightId: null, position: { x: 35, y: 190 } },
+        { id: ids[4], value: 6, leftId: null, rightId: null, position: { x: 115, y: 190 } },
+        { id: ids[5], value: 9, leftId: null, rightId: null, position: { x: 185, y: 190 } },
+        { id: ids[6], value: 14, leftId: null, rightId: null, position: { x: 265, y: 190 } },
+      ] }
+    }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

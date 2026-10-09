@@ -91,6 +91,22 @@ describe('Smart Board app shell', () => {
     await waitFor(() => expect(savedBoard().objects[0].nodes).toHaveLength(4))
   })
 
+  it('adds a binary tree, inserts a child, removes its subtree, and replays', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add binary tree' }))
+    const tree = within(screen.getByRole('region', { name: 'Board canvas' })).getByRole('button', { name: /Binary tree/ })
+    expect(tree.querySelectorAll('.tree-node')).toHaveLength(7)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tree node value' }), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Insert left child' }))
+    await waitFor(() => expect(tree.querySelectorAll('.tree-node')).toHaveLength(8))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Highlight tree node 8' }))
+    expect(tree.querySelector('.tree-node-highlighted')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(tree.querySelector('.tree-node-highlighted')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(tree.querySelector('.tree-node-highlighted')).toBeInTheDocument()
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

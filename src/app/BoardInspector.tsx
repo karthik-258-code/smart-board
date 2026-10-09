@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BoardObject, GraphObject, LinkedListObject } from '../domain/model'
+import type { BinaryTreeObject, BoardObject, GraphObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
 
@@ -87,6 +87,39 @@ function GraphControls({ object, onOperation }: { object: GraphObject; onOperati
     {object.edges.map((edge) => <div className="graph-node-control" key={edge.id}>
       <span>{object.nodes.find((node) => node.id === edge.from)?.label} — {object.nodes.find((node) => node.id === edge.to)?.label}</span>
       <button type="button" aria-label={`Remove edge ${edge.id}`} onClick={() => onOperation({ type: 'graph/remove-edge', objectId: object.id, edgeId: edge.id })}>Remove</button>
+    </div>)}
+  </div>
+}
+
+function BinaryTreeControls({ object, onOperation }: { object: BinaryTreeObject; onOperation: (operation: BoardOperation) => void }) {
+  const [value, setValue] = useState('')
+  const [parentId, setParentId] = useState(object.nodes.find((node) => node.leftId === null || node.rightId === null)?.id ?? '')
+  const insert = (side: 'root' | 'left' | 'right') => {
+    const parent = object.nodes.find((node) => node.id === parentId)
+    const position = side === 'root' ? { x: 150, y: 30 } : { x: (parent?.position.x ?? 150) + (side === 'left' ? -42 : 42), y: (parent?.position.y ?? 30) + 78 }
+    onOperation({ type: 'tree/insert', objectId: object.id, parentId: side === 'root' ? null : parentId, side, node: { id: createNodeId(), value: parseArrayValue(value), leftId: null, rightId: null, position } })
+    setValue('')
+  }
+  return <div className="array-controls tree-controls">
+    <p className="inspector-value">Binary tree · {object.nodes.length} of 30 nodes</p>
+    <label className="field-control">Node value
+      <input aria-label="Tree node value" value={value} onChange={(event) => setValue(event.target.value)} />
+    </label>
+    {object.nodes.length === 0 ? <button type="button" onClick={() => insert('root')}>Add root</button> : <>
+      <label className="field-control">Parent node
+        <select aria-label="Tree parent node" value={parentId} onChange={(event) => setParentId(event.target.value)}>{object.nodes.map((node) => <option key={node.id} value={node.id}>{String(node.value)}</option>)}</select>
+      </label>
+      <div className="linked-list-actions">
+        <button type="button" disabled={object.nodes.length >= 30 || object.nodes.find((node) => node.id === parentId)?.leftId !== null} onClick={() => insert('left')}>Insert left child</button>
+        <button type="button" disabled={object.nodes.length >= 30 || object.nodes.find((node) => node.id === parentId)?.rightId !== null} onClick={() => insert('right')}>Insert right child</button>
+      </div>
+    </>}
+    {object.nodes.map((node) => <div className="graph-node-control" key={node.id}>
+      <label className="highlight-toggle"><input type="checkbox" aria-label={`Highlight tree node ${node.value}`} checked={object.highlightedNodeIds.includes(node.id)} onChange={(event) => {
+        const nodeIds = event.target.checked ? [...object.highlightedNodeIds, node.id] : object.highlightedNodeIds.filter((id) => id !== node.id)
+        onOperation({ type: 'tree/set-highlighted', objectId: object.id, nodeIds })
+      }} />{String(node.value)}</label>
+      <button type="button" aria-label={`Remove subtree at ${node.value}`} onClick={() => onOperation({ type: 'tree/remove-subtree', objectId: object.id, nodeId: node.id })}>Remove subtree</button>
     </div>)}
   </div>
 }
@@ -329,6 +362,7 @@ export function BoardInspector({
           {object.type === 'container' && <ContainerControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'linked-list' && <LinkedListControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'graph' && <GraphControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'binary-tree' && <BinaryTreeControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

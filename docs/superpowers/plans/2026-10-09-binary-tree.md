@@ -22,16 +22,27 @@
 - Full trees and occupied child slots reject edits atomically.
 
 ### Task 1: Model, operations, and tests
-- [ ] Add failing tests for valid/invalid trees, insert, remove-subtree, and inverse history.
-- [ ] Implement strict object validation and reversible operations.
-- [ ] Register strict history fields; run focused tests and commit.
+- [x] Add failing tests for valid/invalid trees, insert, remove-subtree, and inverse history.
+- [x] Implement strict object validation and reversible operations.
+- [x] Register strict history fields; run focused tests.
 
 ### Task 2: Canvas and controls
-- [ ] Add sample tree toolbar control and accessible SVG renderer.
-- [ ] Add inspector controls for root/child insertion, subtree removal, and highlighting.
-- [ ] Test app edits, persistence, undo, and redo; run focused tests and commit.
+- [x] Add sample tree toolbar control and accessible SVG renderer.
+- [x] Add inspector controls for root/child insertion, subtree removal, and highlighting.
+- [x] Test app edits and undo/redo; run focused tests.
 
 ### Task 3: Docs and verification
-- [ ] Update README and completion record.
+- [x] Update README and completion record.
 - [ ] Run full tests, production build, and diff check.
 - [ ] Commit as `feat: add binary tree board object`.
+
+## Completion record
+
+- Added a validated binary-tree object with a single root, at most two children per node, connected acyclic structure, and highlighted nodes.
+- Added root/child insertion, recursive subtree removal, highlighting, and exact undo/redo restoration.
+- Added seven-node sample tree, SVG edges and nodes, inspector controls, and application interaction tests.
+- Registered operation fields with strict history persistence.
+- Verification: full suite passed (142 tests across 16 files), production build passed, and `git diff --check` passed.
+
+- [x] Run full tests, production build, and diff check.
+- [x] Commit as `feat: add binary tree board object`.

@@ -10,6 +10,7 @@ import { CheckpointRenderer } from './objectRenderers/CheckpointRenderer'
 import { ContainerRenderer } from './objectRenderers/ContainerRenderer'
 import { LinkedListRenderer } from './objectRenderers/LinkedListRenderer'
 import { GraphRenderer } from './objectRenderers/GraphRenderer'
+import { BinaryTreeRenderer } from './objectRenderers/BinaryTreeRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -24,6 +25,7 @@ function labelFor(object: BoardObject): string {
     case 'container': return `${object.kind === 'stack' ? 'Stack' : 'Queue'}: ${object.values.join(', ') || 'empty'}`
     case 'linked-list': return `Linked list: ${object.nodes.map((node) => node.value).join(' → ') || 'empty'}`
     case 'graph': return `Graph: ${object.nodes.length} vertices, ${object.edges.length} edges`
+    case 'binary-tree': return `Binary tree: ${object.nodes.length} nodes`
   }
 }
 
@@ -80,6 +82,7 @@ export function ObjectRenderer({
       {object.type === 'container' && <ContainerRenderer object={object} />}
       {object.type === 'linked-list' && <LinkedListRenderer object={object} />}
       {object.type === 'graph' && <GraphRenderer object={object} />}
+      {object.type === 'binary-tree' && <BinaryTreeRenderer object={object} />}
     </g>
   )
 }
