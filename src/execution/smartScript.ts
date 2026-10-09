@@ -17,6 +17,10 @@ function fail(code: SmartScriptError['code'], message: string, line: number): Re
   return { ok: false, error: { code, message, line } }
 }
 
+function isSafeIdentifier(value: string): boolean {
+  return /^[A-Za-z_$][\w$]*$/.test(value) && !['__proto__', 'prototype', 'constructor'].includes(value)
+}
+
 /** Executes a deliberately small, non-evaluating Smart Script subset. */
 export function runArrayTraversal(
   source: string,
@@ -37,6 +41,7 @@ export function runArrayTraversal(
   const loop = loopPattern.exec(lines[loopLineIndex])!
 
   const indexName = loop[1]
+  if (!isSafeIdentifier(indexName)) return fail('unsupported_syntax', 'This variable name is reserved by the script runtime.', loopLineIndex + 1)
   const initialIndex = Number(loop[2])
   if (!Number.isSafeInteger(initialIndex)) return fail('step_limit', 'The loop start index must be a safe integer.', 1)
   const arrayName = loop[3]
@@ -45,7 +50,7 @@ export function runArrayTraversal(
   const variables: Record<string, number> = {}
   for (let lineIndex = 0; lineIndex < loopLineIndex; lineIndex += 1) {
     const declaration = /^\s*let\s+([A-Za-z_$][\w$]*)\s*=\s*(-?\d+)\s*;\s*$/.exec(lines[lineIndex])
-    if (!declaration || declaration[1] === indexName || declaration[1] === 'values' || Object.hasOwn(variables, declaration[1])) {
+    if (!declaration || !isSafeIdentifier(declaration[1]) || declaration[1] === indexName || declaration[1] === 'values' || Object.hasOwn(variables, declaration[1])) {
       return fail('unsupported_syntax', 'Before the loop, only unique integer declarations such as let total = 0; are supported.', lineIndex + 1)
     }
     const initialValue = Number(declaration[2])

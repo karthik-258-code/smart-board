@@ -94,4 +94,11 @@ describe('Smart Script array traversal', () => {
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.events).toHaveLength(0)
   })
+
+  it('rejects prototype-sensitive variable names', () => {
+    const initial = historyWithArray([1])
+    const result = runArrayTraversal('for (let __proto__ = 0; __proto__ < values.length; __proto__++) {\n  highlight(__proto__);\n}', initial, 'values-board')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 1 } })
+  })
 })

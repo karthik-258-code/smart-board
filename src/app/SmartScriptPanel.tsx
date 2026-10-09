@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ArrayObject } from '../domain/model'
 
 export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number> }> }
@@ -18,6 +18,11 @@ export function SmartScriptPanel({
 }) {
   const [source, setSource] = useState(execution?.source ?? starterScript)
   const [arrayId, setArrayId] = useState(execution?.arrayId ?? arrays[0]?.id ?? '')
+  useEffect(() => {
+    if (!execution) return
+    setSource(execution.source)
+    setArrayId(execution.arrayId)
+  }, [execution])
   const selectedArrayId = arrays.some((array) => array.id === arrayId) ? arrayId : arrays[0]?.id ?? ''
   const currentEvent = execution?.events.find((event) => event.cursor === cursor)
   const lines = (execution?.source ?? source).split('\n')

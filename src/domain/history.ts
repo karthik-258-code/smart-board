@@ -70,7 +70,7 @@ function validateExecution(value: unknown, entryCount: number): Result<SavedExec
     }
     const variables: Record<string, number> = {}
     for (const [name, variable] of Object.entries(event.variables)) {
-      if (!/^[A-Za-z_$][\w$]*$/.test(name) || typeof variable !== 'number' || !Number.isFinite(variable)) {
+      if (!/^[A-Za-z_$][\w$]*$/.test(name) || ['__proto__', 'prototype', 'constructor'].includes(name) || typeof variable !== 'number' || !Number.isFinite(variable)) {
         return invalidHistory('Saved script variables must have valid names and finite numeric values.')
       }
       variables[name] = variable
