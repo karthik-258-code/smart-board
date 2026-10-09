@@ -125,6 +125,26 @@ describe('Smart Board app shell', () => {
     expect(table.querySelector('.hash-bucket[data-bucket="6"]')).toHaveTextContent('ba: 2')
   })
 
+  it('maintains a max heap and replays pushes and extraction', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add heap' }))
+    const heap = within(screen.getByRole('region', { name: 'Board canvas' })).getByRole('button', { name: /Min heap/ })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Heap kind' }), { target: { value: 'max' } })
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Heap value' }), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Heap value' }), { target: { value: '9' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    expect(heap).toHaveAccessibleName('Max heap: 2 values')
+    expect(heap.querySelector('.heap-top')).toHaveTextContent('9')
+    fireEvent.click(screen.getByRole('button', { name: 'Extract top' }))
+    await waitFor(() => expect(heap).toHaveAccessibleName('Max heap: 1 values'))
+    expect(heap.querySelector('.heap-top')).toHaveTextContent('3')
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(heap.querySelector('.heap-top')).toHaveTextContent('9')
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(heap.querySelector('.heap-top')).toHaveTextContent('3')
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BinaryTreeObject, BoardObject, GraphObject, HashTableObject, LinkedListObject } from '../domain/model'
+import type { BinaryTreeObject, BoardObject, GraphObject, HashTableObject, HeapObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
 import { hashBucketForKey } from '../domain/hashTable'
@@ -146,6 +146,27 @@ function HashTableControls({ object, onOperation }: { object: HashTableObject; o
       <span>{entry.key}: {String(entry.value)} · bucket {hashBucketForKey(entry.key, object.bucketCount)}</span>
       <button type="button" aria-label={`Remove key ${entry.key}`} onClick={() => onOperation({ type: 'hash-table/remove', objectId: object.id, key: entry.key })}>Remove</button>
     </div>)}
+  </div>
+}
+
+function HeapControls({ object, onOperation }: { object: HeapObject; onOperation: (operation: BoardOperation) => void }) {
+  const [value, setValue] = useState('')
+  const parsed = Number(value)
+  return <div className="array-controls heap-controls">
+    <p className="inspector-value">{object.values.length} of 31 values · array and tree views</p>
+    <label className="field-control">Heap kind
+      <select aria-label="Heap kind" value={object.kind} disabled={object.values.length > 0} onChange={(event) => onOperation({ type: 'heap/set-kind', objectId: object.id, kind: event.target.value as HeapObject['kind'] })}>
+        <option value="min">Min heap</option><option value="max">Max heap</option>
+      </select>
+    </label>
+    <label className="field-control">Heap value
+      <input aria-label="Heap value" type="number" value={value} onChange={(event) => setValue(event.target.value)} />
+    </label>
+    <div className="linked-list-actions">
+      <button type="button" disabled={object.values.length >= 31 || value.trim() === '' || !Number.isFinite(parsed)} onClick={() => { onOperation({ type: 'heap/push', objectId: object.id, value: parsed }); setValue('') }}>Push</button>
+      <button type="button" disabled={object.values.length === 0} onClick={() => onOperation({ type: 'heap/extract-top', objectId: object.id })}>Extract top</button>
+    </div>
+    {object.values.length > 0 && <p className="inspector-value">Top value: {object.values[0]}</p>}
   </div>
 }
 
@@ -389,6 +410,7 @@ export function BoardInspector({
           {object.type === 'graph' && <GraphControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'binary-tree' && <BinaryTreeControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'hash-table' && <HashTableControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'heap' && <HeapControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

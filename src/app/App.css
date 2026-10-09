@@ -140,6 +140,12 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .hash-bucket rect { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
 .hash-bucket-index { fill: var(--accent-strong); font-size: 11px; font-weight: 800; }
 .hash-bucket-entries { fill: var(--ink); font-size: 11px; font-weight: 650; }
+.heap-title, .heap-array-title, .heap-empty { fill: var(--ink-soft); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.heap-edge { stroke: var(--line); stroke-width: 2; }
+.heap-node circle, .heap-array-cell rect { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.heap-node text, .heap-array-cell text { fill: var(--ink); font-size: 11px; font-weight: 750; }
+.heap-top circle { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 3; }
+.heap-array-index { fill: var(--ink-soft) !important; font-size: 9px !important; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

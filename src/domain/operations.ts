@@ -1,4 +1,5 @@
-import type { ArrayObject, BinaryTreeNode, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, HashEntry, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import type { ArrayObject, BinaryTreeNode, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, HashEntry, HeapObject, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import { extractHeapTop, pushHeap } from './heap'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -42,6 +43,10 @@ export type BoardOperation =
   | { type: 'hash-table/set'; objectId: string; key: string; value: string | number }
   | { type: 'hash-table/remove'; objectId: string; key: string }
   | { type: 'hash-table/restore-entries'; objectId: string; entries: HashEntry[] }
+  | { type: 'heap/push'; objectId: string; value: number }
+  | { type: 'heap/extract-top'; objectId: string }
+  | { type: 'heap/set-kind'; objectId: string; kind: HeapObject['kind'] }
+  | { type: 'heap/restore'; objectId: string; kind: HeapObject['kind']; values: number[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -463,6 +468,33 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         }
         updated = { ...current, entries }
         inverse = { type: 'hash-table/restore-entries', objectId: current.id, entries: priorEntries }
+      }
+      break
+    case 'heap/push':
+    case 'heap/extract-top':
+    case 'heap/set-kind':
+    case 'heap/restore':
+      if (current.type !== 'heap') return fail('incompatible_object', 'Operation requires a heap.', current.id)
+      {
+        const prior = { kind: current.kind, values: current.values }
+        let kind = current.kind
+        let values = [...current.values]
+        if (operation.type === 'heap/push') {
+          if (!Number.isFinite(operation.value)) return fail('invalid_value', 'Heap values must be finite numbers.', current.id)
+          if (values.length >= 31) return fail('heap_full', 'Heap cannot hold more than 31 values.', current.id)
+          values = pushHeap(values, operation.value, kind)
+        } else if (operation.type === 'heap/extract-top') {
+          if (values.length === 0) return fail('empty_heap', 'Cannot extract from an empty heap.', current.id)
+          values = extractHeapTop(values, kind)
+        } else if (operation.type === 'heap/set-kind') {
+          if (values.length > 0) return fail('heap_not_empty', 'Heap type can only change while empty.', current.id)
+          kind = operation.kind
+        } else {
+          kind = operation.kind
+          values = operation.values
+        }
+        updated = { ...current, kind, values }
+        inverse = { type: 'heap/restore', objectId: current.id, ...prior }
       }
       break
   }

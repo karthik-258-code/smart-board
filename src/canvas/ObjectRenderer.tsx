@@ -12,6 +12,7 @@ import { LinkedListRenderer } from './objectRenderers/LinkedListRenderer'
 import { GraphRenderer } from './objectRenderers/GraphRenderer'
 import { BinaryTreeRenderer } from './objectRenderers/BinaryTreeRenderer'
 import { HashTableRenderer } from './objectRenderers/HashTableRenderer'
+import { HeapRenderer } from './objectRenderers/HeapRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -28,6 +29,7 @@ function labelFor(object: BoardObject): string {
     case 'graph': return `Graph: ${object.nodes.length} vertices, ${object.edges.length} edges`
     case 'binary-tree': return `Binary tree: ${object.nodes.length} nodes`
     case 'hash-table': return `Hash table: ${object.entries.length} entries in ${object.bucketCount} buckets`
+    case 'heap': return `${object.kind === 'min' ? 'Min' : 'Max'} heap: ${object.values.length} values`
   }
 }
 
@@ -86,6 +88,7 @@ export function ObjectRenderer({
       {object.type === 'graph' && <GraphRenderer object={object} />}
       {object.type === 'binary-tree' && <BinaryTreeRenderer object={object} />}
       {object.type === 'hash-table' && <HashTableRenderer object={object} />}
+      {object.type === 'heap' && <HeapRenderer object={object} />}
     </g>
   )
 }

@@ -28,6 +28,8 @@ const operationFields: Record<string, string[]> = {
   'tree/set-highlighted': ['objectId', 'nodeIds'], 'tree/restore-state': ['objectId', 'rootId', 'nodes', 'highlightedNodeIds'],
   'hash-table/set': ['objectId', 'key', 'value'], 'hash-table/remove': ['objectId', 'key'],
   'hash-table/restore-entries': ['objectId', 'entries'],
+  'heap/push': ['objectId', 'value'], 'heap/extract-top': ['objectId'],
+  'heap/set-kind': ['objectId', 'kind'], 'heap/restore': ['objectId', 'kind', 'values'],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

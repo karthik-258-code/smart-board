@@ -15,6 +15,7 @@ import type {
   GraphObject,
   BinaryTreeObject,
   HashTableObject,
+  HeapObject,
 } from './model'
 import type { Result } from './result'
 
@@ -188,6 +189,14 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
         && (typeof entry.value === 'string' || isFiniteNumber(entry.value)))) return false
       return new Set(value.entries.map((entry) => (entry as Record<string, unknown>).key)).size === value.entries.length
     }
+    case 'heap': {
+      if ((value.kind !== 'min' && value.kind !== 'max') || !Array.isArray(value.values) || value.values.length > 31 || !value.values.every(isFiniteNumber)) return false
+      for (let index = 1; index < value.values.length; index += 1) {
+        const parent = Number(value.values[Math.floor((index - 1) / 2)])
+        if (value.kind === 'min' ? parent > Number(value.values[index]) : parent < Number(value.values[index])) return false
+      }
+      return true
+    }
   }
 }
 
@@ -275,6 +284,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'hash-table',
     typeVersion: 1,
     validate: (value) => validateObject<HashTableObject>(value, 'hash-table', ['bucketCount', 'entries']),
+  },
+  heap: {
+    type: 'heap',
+    typeVersion: 1,
+    validate: (value) => validateObject<HeapObject>(value, 'heap', ['kind', 'values']),
   },
 }
 

@@ -56,8 +56,9 @@ export type BinaryTreeNode = { id: string; value: string | number; leftId: strin
 export type BinaryTreeObject = BaseObject & { type: 'binary-tree'; rootId: string | null; nodes: BinaryTreeNode[]; highlightedNodeIds: string[] }
 export type HashEntry = { key: string; value: string | number }
 export type HashTableObject = BaseObject & { type: 'hash-table'; bucketCount: number; entries: HashEntry[] }
+export type HeapObject = BaseObject & { type: 'heap'; kind: 'min' | 'max'; values: number[] }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject | GraphObject | BinaryTreeObject | HashTableObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject | GraphObject | BinaryTreeObject | HashTableObject | HeapObject
 
 export type BoardDocument = {
   id: string
