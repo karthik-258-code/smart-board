@@ -258,6 +258,20 @@ function App() {
         { id: ids[2], value: 12, nextId: null },
       ] }
     }
+    else if (type === 'graph') {
+      const ids = [createObjectId(), createObjectId(), createObjectId()]
+      object = { id: createObjectId(), type: 'graph', typeVersion: 1, position,
+        nodes: [
+          { id: ids[0], label: 'A', position: { x: 42, y: 50 } },
+          { id: ids[1], label: 'B', position: { x: 150, y: 50 } },
+          { id: ids[2], label: 'C', position: { x: 96, y: 145 } },
+        ],
+        edges: [
+          { id: createObjectId(), from: ids[0], to: ids[1] },
+          { id: createObjectId(), from: ids[1], to: ids[2] },
+        ], highlightedNodeIds: [],
+      }
+    }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

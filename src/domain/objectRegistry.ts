@@ -12,6 +12,7 @@ import type {
   CheckpointObject,
   ContainerObject,
   LinkedListObject,
+  GraphObject,
 } from './model'
 import type { Result } from './result'
 
@@ -127,6 +128,25 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
       if (new Set(ids).size !== ids.length) return false
       return nodes.every((node, index) => (node as Record<string, unknown>).nextId === (ids[index + 1] ?? null))
     }
+    case 'graph': {
+      if (!Array.isArray(value.nodes) || value.nodes.length > 30 || !Array.isArray(value.edges) || value.edges.length > 60 || !Array.isArray(value.highlightedNodeIds)) return false
+      const nodes = value.nodes
+      const edges = value.edges
+      if (!nodes.every((node) => isRecord(node) && hasOnlyFields(node, ['id', 'label', 'position'])
+        && typeof node.id === 'string' && node.id.trim().length > 0 && typeof node.label === 'string'
+        && isRecord(node.position) && hasOnlyFields(node.position, ['x', 'y']) && isFiniteNumber(node.position.x) && isFiniteNumber(node.position.y))) return false
+      const nodeIds = nodes.map((node) => (node as Record<string, unknown>).id as string)
+      if (new Set(nodeIds).size !== nodeIds.length) return false
+      if (!edges.every((edge) => isRecord(edge) && hasOnlyFields(edge, ['id', 'from', 'to'])
+        && typeof edge.id === 'string' && edge.id.trim().length > 0 && nodeIds.includes(String(edge.from))
+        && nodeIds.includes(String(edge.to)) && edge.from !== edge.to)) return false
+      const edgeIds = edges.map((edge) => (edge as Record<string, unknown>).id as string)
+      if (new Set(edgeIds).size !== edgeIds.length) return false
+      const pairs = edges.map((edge) => [(edge as Record<string, unknown>).from, (edge as Record<string, unknown>).to].sort().join(':'))
+      if (new Set(pairs).size !== pairs.length) return false
+      return value.highlightedNodeIds.every((id) => typeof id === 'string' && nodeIds.includes(id))
+        && new Set(value.highlightedNodeIds).size === value.highlightedNodeIds.length
+    }
   }
 }
 
@@ -199,6 +219,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'linked-list',
     typeVersion: 1,
     validate: (value) => validateObject<LinkedListObject>(value, 'linked-list', ['nodes']),
+  },
+  graph: {
+    type: 'graph',
+    typeVersion: 1,
+    validate: (value) => validateObject<GraphObject>(value, 'graph', ['nodes', 'edges', 'highlightedNodeIds']),
   },
 }
 

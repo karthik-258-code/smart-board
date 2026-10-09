@@ -71,6 +71,26 @@ describe('Smart Board app shell', () => {
     expect(savedBoard().objects[0].nodes.map((node: { value: number }) => node.value)).toEqual([16, 12, 8, 4])
   })
 
+  it('adds a graph, connects vertices, highlights state, and persists replay', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add graph' }))
+    const graph = within(screen.getByRole('region', { name: 'Board canvas' })).getByRole('button', { name: /Graph:/ })
+    expect(graph.querySelectorAll('.graph-node')).toHaveLength(3)
+    expect(graph.querySelectorAll('.graph-edge')).toHaveLength(2)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Graph vertex label' }), { target: { value: 'D' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add vertex' }))
+    await waitFor(() => expect(graph.querySelectorAll('.graph-node')).toHaveLength(4))
+    fireEvent.click(screen.getByRole('button', { name: 'Add edge' }))
+    await waitFor(() => expect(graph.querySelectorAll('.graph-edge')).toHaveLength(3))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Highlight vertex A' }))
+    expect(graph.querySelector('.graph-node-highlighted')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(graph.querySelector('.graph-node-highlighted')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(graph.querySelector('.graph-node-highlighted')).toBeInTheDocument()
+    await waitFor(() => expect(savedBoard().objects[0].nodes).toHaveLength(4))
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

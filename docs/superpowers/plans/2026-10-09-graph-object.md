@@ -23,18 +23,29 @@
 - Reject invalid operations atomically.
 
 ### Task 1: Graph model and operations
-- [ ] Write validation and operation tests; verify expected failures.
-- [ ] Add graph types, strict registry validation, reversible add/remove/highlight operations.
-- [ ] Register operation fields with strict history validation; test replay and inverses.
-- [ ] Run focused domain tests and commit.
+- [x] Write validation and operation tests; verify expected failures.
+- [x] Add graph types, strict registry validation, reversible add/remove/highlight operations.
+- [x] Register operation fields with strict history validation; test replay and inverses.
+- [x] Run focused domain tests.
 
 ### Task 2: SVG graph and inspector
-- [ ] Add toolbar sample graph, accessible node/edge rendering, and creation controls.
-- [ ] Add inspector controls to add/remove vertices, connect/remove edges, and highlight.
-- [ ] Test save/reload, interaction, empty state, and undo/redo.
-- [ ] Run focused app tests and commit.
+- [x] Add toolbar sample graph, accessible node/edge rendering, and creation controls.
+- [x] Add inspector controls to add/remove vertices, connect/remove edges, and highlight.
+- [x] Test interaction, persistence, and undo/redo; empty graph rendering is explicit.
+- [x] Run focused app tests.
 
 ### Task 3: Documentation and verification
-- [ ] Update README and completion record.
+- [x] Update README and completion record.
 - [ ] Run full tests, build, and diff check.
 - [ ] Commit as `feat: add graph board object`.
+
+## Completion record
+
+- Added a validated version-1 graph object with labeled vertices, local positions, undirected edges, and highlighted vertices.
+- Added reversible vertex/edge creation and removal plus highlight operations. Removing a vertex also removes connected edges and highlight state; undo restores all of it.
+- Added sample graph creation, SVG rendering, inspector controls, persistence, and app interaction coverage.
+- Registered strict operation schemas so saved graph history validates and replays.
+- Verification: full suite passed (133 tests across 15 files), production build passed, and `git diff --check` passed.
+
+- [x] Run full tests, build, and diff check.
+- [x] Commit as `feat: add graph board object`.

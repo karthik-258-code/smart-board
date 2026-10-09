@@ -49,8 +49,11 @@ export type CheckpointObject = BaseObject & { type: 'checkpoint'; prompt: string
 export type ContainerObject = BaseObject & { type: 'container'; kind: 'stack' | 'queue'; values: Array<string | number> }
 export type LinkedListNode = { id: string; value: string | number; nextId: string | null }
 export type LinkedListObject = BaseObject & { type: 'linked-list'; nodes: LinkedListNode[] }
+export type GraphNode = { id: string; label: string; position: BoardPosition }
+export type GraphEdge = { id: string; from: string; to: string }
+export type GraphObject = BaseObject & { type: 'graph'; nodes: GraphNode[]; edges: GraphEdge[]; highlightedNodeIds: string[] }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject | GraphObject
 
 export type BoardDocument = {
   id: string

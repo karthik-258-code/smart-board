@@ -1,4 +1,4 @@
-import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import type { ArrayObject, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -29,6 +29,12 @@ export type BoardOperation =
   | { type: 'linked-list/remove'; objectId: string; nodeId: string }
   | { type: 'linked-list/reverse'; objectId: string }
   | { type: 'linked-list/restore-nodes'; objectId: string; nodes: LinkedListNode[] }
+  | { type: 'graph/add-node'; objectId: string; node: GraphNode }
+  | { type: 'graph/remove-node'; objectId: string; nodeId: string }
+  | { type: 'graph/add-edge'; objectId: string; edge: GraphEdge }
+  | { type: 'graph/remove-edge'; objectId: string; edgeId: string }
+  | { type: 'graph/set-highlighted'; objectId: string; nodeIds: string[] }
+  | { type: 'graph/restore-state'; objectId: string; nodes: GraphNode[]; edges: GraphEdge[]; highlightedNodeIds: string[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -85,6 +91,10 @@ function updateArrayReferences(
 
 function fail(code: string, message: string, objectId?: string, index?: number): Result<never, OperationError> {
   return { ok: false, error: { code, message, ...(objectId === undefined ? {} : { objectId }), ...(index === undefined ? {} : { index }) } }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function finish(
@@ -331,6 +341,47 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         nodes = nodes.map((node, index) => ({ ...node, nextId: nodes[index + 1]?.id ?? null }))
         updated = { ...current, nodes }
         inverse = { type: 'linked-list/restore-nodes', objectId: current.id, nodes: priorNodes }
+      }
+      break
+    case 'graph/add-node':
+    case 'graph/remove-node':
+    case 'graph/add-edge':
+    case 'graph/remove-edge':
+    case 'graph/set-highlighted':
+    case 'graph/restore-state':
+      if (current.type !== 'graph') return fail('incompatible_object', 'Operation requires a graph.', current.id)
+      {
+        const prior = { nodes: current.nodes, edges: current.edges, highlightedNodeIds: current.highlightedNodeIds }
+        let nodes = [...current.nodes]
+        let edges = [...current.edges]
+        let highlightedNodeIds = [...current.highlightedNodeIds]
+        if (operation.type === 'graph/add-node') {
+          if (!isRecord(operation.node) || typeof operation.node.id !== 'string') return fail('invalid_node', 'Vertex data is invalid.', current.id)
+          if (nodes.length >= 30) return fail('graph_full', 'Graph cannot contain more than 30 vertices.', current.id)
+          if (nodes.some((node) => node.id === operation.node.id)) return fail('duplicate_node_id', 'Vertex ID must be unique.', current.id)
+          nodes.push(operation.node)
+        } else if (operation.type === 'graph/remove-node') {
+          if (!nodes.some((node) => node.id === operation.nodeId)) return fail('missing_node', 'Vertex does not exist.', current.id)
+          nodes = nodes.filter((node) => node.id !== operation.nodeId)
+          edges = edges.filter((edge) => edge.from !== operation.nodeId && edge.to !== operation.nodeId)
+          highlightedNodeIds = highlightedNodeIds.filter((id) => id !== operation.nodeId)
+        } else if (operation.type === 'graph/add-edge') {
+          if (!isRecord(operation.edge) || typeof operation.edge.id !== 'string' || typeof operation.edge.from !== 'string' || typeof operation.edge.to !== 'string') return fail('invalid_edge', 'Edge data is invalid.', current.id)
+          if (edges.length >= 60) return fail('graph_full', 'Graph cannot contain more than 60 edges.', current.id)
+          if (edges.some((edge) => edge.id === operation.edge.id)) return fail('duplicate_edge_id', 'Edge ID must be unique.', current.id)
+          edges.push(operation.edge)
+        } else if (operation.type === 'graph/remove-edge') {
+          if (!edges.some((edge) => edge.id === operation.edgeId)) return fail('missing_edge', 'Edge does not exist.', current.id)
+          edges = edges.filter((edge) => edge.id !== operation.edgeId)
+        } else if (operation.type === 'graph/set-highlighted') {
+          highlightedNodeIds = operation.nodeIds
+        } else {
+          nodes = operation.nodes
+          edges = operation.edges
+          highlightedNodeIds = operation.highlightedNodeIds
+        }
+        updated = { ...current, nodes, edges, highlightedNodeIds }
+        inverse = { type: 'graph/restore-state', objectId: current.id, ...prior }
       }
       break
   }

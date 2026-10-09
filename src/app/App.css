@@ -121,6 +121,16 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .linked-list-next-label, .linked-list-index, .linked-list-null-label, .linked-list-empty-label { fill: var(--ink-soft); font-size: 10px; font-weight: 700; }
 .linked-list-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .linked-list-inspector-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding-top: 0.35rem; border-top: 1px solid var(--line); font-size: 0.8rem; }
+.graph-edge { stroke: var(--line); stroke-width: 3; }
+.graph-node circle { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.graph-node text { fill: var(--ink); font-size: 14px; font-weight: 800; pointer-events: none; }
+.graph-node-highlighted circle { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 4; }
+.graph-title, .graph-empty { fill: var(--ink-soft); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.graph-edge-controls, .graph-node-control { display: flex; align-items: end; gap: 0.45rem; }
+.graph-edge-controls > .field-control { flex: 1; min-width: 0; }
+.graph-node-list { margin: 0; padding: 0.5rem; border: 1px solid var(--line); border-radius: 8px; }
+.graph-node-list legend { color: var(--ink-soft); font-size: 0.75rem; font-weight: 700; }
+.graph-node-control { justify-content: space-between; padding: 0.2rem 0; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

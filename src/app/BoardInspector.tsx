@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BoardObject, LinkedListObject } from '../domain/model'
+import type { BoardObject, GraphObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
 
@@ -47,6 +47,46 @@ function LinkedListControls({ object, onOperation }: { object: LinkedListObject;
     {object.nodes.map((node, index) => <div className="linked-list-inspector-row" key={node.id}>
       <span>{index}: {String(node.value)} → {node.nextId ? object.nodes.findIndex((item) => item.id === node.nextId) : 'NULL'}</span>
       <button type="button" aria-label={`Remove node ${index}`} onClick={() => onOperation({ type: 'linked-list/remove', objectId: object.id, nodeId: node.id })}>Remove</button>
+    </div>)}
+  </div>
+}
+
+function GraphControls({ object, onOperation }: { object: GraphObject; onOperation: (operation: BoardOperation) => void }) {
+  const [label, setLabel] = useState('')
+  const [from, setFrom] = useState(object.nodes[0]?.id ?? '')
+  const [to, setTo] = useState(object.nodes[2]?.id ?? object.nodes[1]?.id ?? '')
+  return <div className="array-controls graph-controls">
+    <p className="inspector-value">Undirected graph · {object.nodes.length} of 30 vertices · {object.edges.length} of 60 edges</p>
+    <label className="field-control">Vertex label
+      <input aria-label="Graph vertex label" value={label} onChange={(event) => setLabel(event.target.value)} />
+    </label>
+    <button type="button" disabled={object.nodes.length >= 30} onClick={() => {
+      const id = createNodeId()
+      const nextLabel = label.trim() || String.fromCharCode(65 + object.nodes.length)
+      onOperation({ type: 'graph/add-node', objectId: object.id, node: { id, label: nextLabel, position: { x: 50 + (object.nodes.length % 4) * 100, y: 50 + Math.floor(object.nodes.length / 4) * 92 } } })
+      setLabel('')
+    }}>Add vertex</button>
+    <div className="graph-edge-controls">
+      <label className="field-control">From
+        <select aria-label="Graph edge start" value={from} onChange={(event) => setFrom(event.target.value)}>{object.nodes.map((node) => <option key={node.id} value={node.id}>{node.label}</option>)}</select>
+      </label>
+      <label className="field-control">To
+        <select aria-label="Graph edge end" value={to} onChange={(event) => setTo(event.target.value)}>{object.nodes.map((node) => <option key={node.id} value={node.id}>{node.label}</option>)}</select>
+      </label>
+      <button type="button" disabled={object.edges.length >= 60 || object.nodes.length < 2 || from === to} onClick={() => onOperation({ type: 'graph/add-edge', objectId: object.id, edge: { id: createNodeId(), from, to } })}>Add edge</button>
+    </div>
+    <fieldset className="graph-node-list"><legend>Vertices</legend>
+      {object.nodes.map((node) => <div className="graph-node-control" key={node.id}>
+        <label className="highlight-toggle"><input type="checkbox" aria-label={`Highlight vertex ${node.label}`} checked={object.highlightedNodeIds.includes(node.id)} onChange={(event) => {
+          const nodeIds = event.target.checked ? [...object.highlightedNodeIds, node.id] : object.highlightedNodeIds.filter((id) => id !== node.id)
+          onOperation({ type: 'graph/set-highlighted', objectId: object.id, nodeIds })
+        }} />{node.label}</label>
+        <button type="button" aria-label={`Remove vertex ${node.label}`} onClick={() => onOperation({ type: 'graph/remove-node', objectId: object.id, nodeId: node.id })}>Remove</button>
+      </div>)}
+    </fieldset>
+    {object.edges.map((edge) => <div className="graph-node-control" key={edge.id}>
+      <span>{object.nodes.find((node) => node.id === edge.from)?.label} — {object.nodes.find((node) => node.id === edge.to)?.label}</span>
+      <button type="button" aria-label={`Remove edge ${edge.id}`} onClick={() => onOperation({ type: 'graph/remove-edge', objectId: object.id, edgeId: edge.id })}>Remove</button>
     </div>)}
   </div>
 }
@@ -288,6 +328,7 @@ export function BoardInspector({
           </div>}
           {object.type === 'container' && <ContainerControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'linked-list' && <LinkedListControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'graph' && <GraphControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

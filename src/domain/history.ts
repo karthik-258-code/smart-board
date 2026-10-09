@@ -21,6 +21,9 @@ const operationFields: Record<string, string[]> = {
   'container/remove': ['objectId'], 'container/restore-values': ['objectId', 'values'],
   'linked-list/insert': ['objectId', 'afterId', 'nodeId', 'value'], 'linked-list/remove': ['objectId', 'nodeId'],
   'linked-list/reverse': ['objectId'], 'linked-list/restore-nodes': ['objectId', 'nodes'],
+  'graph/add-node': ['objectId', 'node'], 'graph/remove-node': ['objectId', 'nodeId'],
+  'graph/add-edge': ['objectId', 'edge'], 'graph/remove-edge': ['objectId', 'edgeId'],
+  'graph/set-highlighted': ['objectId', 'nodeIds'], 'graph/restore-state': ['objectId', 'nodes', 'edges', 'highlightedNodeIds'],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
