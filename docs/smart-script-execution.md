@@ -28,7 +28,7 @@ Before the loop, scripts may declare unique integer variables such as `let total
 
 ## Execution and history
 
-The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and index-variable snapshot; the editor highlights the active line and displays the snapshot at the current history cursor. Running a script branches from the current history cursor, following the same behavior as other board edits.
+The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; the editor highlights the active line and displays the snapshot at the current history cursor. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
 
 The source is limited to 10,000 characters, the loop to 1,000 iterations, and its body to 100 supported statements. A run may create at most 5,000 timeline events. These limits apply before the interpreter dispatches any operation. An empty array yields no execution events.
 

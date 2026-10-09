@@ -62,6 +62,24 @@ describe('history', () => {
     expect(validateHistory(staleInverse)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
   })
 
+  it('validates and preserves saved script source mappings and variable snapshots', () => {
+    let state = dispatchOrThrow({ initialDocument: initial, entries: [], cursor: 0 }, {
+      type: 'object/add', object: { id: 'array', type: 'array', typeVersion: 1, position: { x: 0, y: 0 }, values: [3], highlightedIndices: [] },
+    })
+    state = dispatchOrThrow(state, { type: 'array/set-highlight', objectId: 'array', indices: [0] })
+    state = { ...state, execution: { kind: 'smart-script', source: 'highlight(i);', arrayId: 'array', events: [{ cursor: 2, line: 1, variables: { i: 0, total: 3 } }] } }
+
+    expect(validateHistory(state)).toEqual({ ok: true, value: state })
+    const branched = dispatch(state, { type: 'array/set-highlight', objectId: 'array', indices: [] })
+    expect(branched.ok).toBe(true)
+    if (branched.ok) expect(branched.value).not.toHaveProperty('execution')
+  })
+
+  it('rejects execution metadata outside the saved timeline', () => {
+    const state = { initialDocument: initial, entries: [], cursor: 0, execution: { kind: 'smart-script', source: 'x', arrayId: 'array', events: [{ cursor: 1, line: 1, variables: { i: 0 } }] } }
+    expect(validateHistory(state)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+  })
+
   it('rejects invalid cursors, unknown fields, and broken future redo entries', () => {
     let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
     state = dispatchOrThrow(state, add('a', 'first'))

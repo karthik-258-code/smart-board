@@ -69,6 +69,19 @@ describe('Smart Board app shell', () => {
     expect(screen.getByText('total = 24')).toBeInTheDocument()
   })
 
+  it('restores Smart Script source and variables when reopening the saved board', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}'
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), { target: { value: source } })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+    view.unmount()
+    render(<App />)
+
+    expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(source)
+    expect(screen.getByText('total = 24')).toBeInTheDocument()
+  })
+
   it('exposes an accessible board region', () => {
     render(<App />)
 

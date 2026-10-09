@@ -32,6 +32,18 @@ describe('board file format', () => {
     expect(parseBoardFile(serialized.ok ? serialized.value : '')).toEqual({ ok: true, value: history })
   })
 
+  it('round-trips script source mappings and runtime variables with a shared board', () => {
+    let history: HistoryState = { initialDocument: createEmptyBoard('script-share'), entries: [], cursor: 0 }
+    const added = dispatch(history, { type: 'object/add', object: { id: 'a', type: 'array', typeVersion: 1, position: { x: 0, y: 0 }, values: [7], highlightedIndices: [] } })
+    if (!added.ok) throw new Error(added.error.message)
+    const highlighted = dispatch(added.value, { type: 'array/set-highlight', objectId: 'a', indices: [0] })
+    if (!highlighted.ok) throw new Error(highlighted.error.message)
+    history = { ...highlighted.value, execution: { kind: 'smart-script', source: 'highlight(i);', arrayId: 'a', events: [{ cursor: 2, line: 1, variables: { i: 0 } }] } }
+
+    const serialized = serializeBoardFile(history)
+    expect(parseBoardFile(serialized.ok ? serialized.value : '')).toEqual({ ok: true, value: history })
+  })
+
   it.each([
     ['invalid_json', '{bad'],
     ['unsupported_schema_version', '{"id":"x","schemaVersion":2,"objects":[]}'],

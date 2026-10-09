@@ -86,7 +86,9 @@ function App() {
   const [playing, setPlaying] = useState(false)
   const [drawingMode, setDrawingMode] = useState(false)
   const [practiceId, setPracticeId] = useState<string | null>(null)
-  const [codeExecution, setCodeExecution] = useState<SmartScriptView | null>(null)
+  const [codeExecution, setCodeExecution] = useState<SmartScriptView | null>(() => startup.history.execution
+    ? { source: startup.history.execution.source, arrayId: startup.history.execution.arrayId, events: startup.history.execution.events }
+    : null)
 
   const board = useMemo(() => {
     const result = stateAt(history, history.cursor)
@@ -168,11 +170,18 @@ function App() {
     }
     setPlaying(false)
     setError(null)
-    setHistory(result.value.history)
-    persistSnapshot(result.value.history)
+    const events = result.value.events.map((event, index) => ({ ...event, cursor: history.cursor + index + 1 }))
+    const snapshots = events.map(({ cursor, line, variables }) => ({ cursor, line, variables }))
+    const historyWithExecution: HistoryState = {
+      ...result.value.history,
+      execution: { kind: 'smart-script', source, arrayId, events: snapshots },
+    }
+    setHistory(historyWithExecution)
+    persistSnapshot(historyWithExecution)
     setCodeExecution({
       source,
-      events: result.value.events.map((event, index) => ({ ...event, cursor: history.cursor + index + 1 })),
+      arrayId,
+      events: snapshots,
     })
   }
 
@@ -213,7 +222,9 @@ function App() {
     setHistory(importedHistory)
     setSelectedId(null)
     setError(null)
-    setCodeExecution(null)
+    setCodeExecution(importedHistory.execution
+      ? { source: importedHistory.execution.source, arrayId: importedHistory.execution.arrayId, events: importedHistory.execution.events }
+      : null)
     setPreserveSavedData(false)
     setRecoveryNeeded(false)
     if (!startup.storage) {

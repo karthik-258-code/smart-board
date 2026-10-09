@@ -5,7 +5,9 @@ import type { BoardOperation, OperationError } from './operations'
 import type { Result } from './result'
 
 export type HistoryEntry = { operation: BoardOperation; inverse: BoardOperation }
-export type HistoryState = { initialDocument: BoardDocument; entries: HistoryEntry[]; cursor: number }
+export type SavedExecutionEvent = { cursor: number; line: number; variables: Record<string, number> }
+export type SavedExecutionTrace = { kind: 'smart-script'; source: string; arrayId: string; events: SavedExecutionEvent[] }
+export type HistoryState = { initialDocument: BoardDocument; entries: HistoryEntry[]; cursor: number; execution?: SavedExecutionTrace }
 export type HistoryError = { code: string; message: string }
 
 const operationFields: Record<string, string[]> = {
@@ -52,8 +54,35 @@ function invalidHistory(message: string): Result<never, HistoryError> {
   return { ok: false, error: { code: 'invalid_history', message } }
 }
 
+function validateExecution(value: unknown, entryCount: number): Result<SavedExecutionTrace, HistoryError> {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['kind', 'source', 'arrayId', 'events']) || value.kind !== 'smart-script'
+    || typeof value.source !== 'string' || value.source.length > 10_000 || typeof value.arrayId !== 'string' || !value.arrayId
+    || !Array.isArray(value.events) || value.events.length > 5_000) return invalidHistory('Saved script execution metadata is malformed.')
+
+  const lines = value.source.replace(/\r\n?/g, '\n').split('\n').length
+  let previousCursor = 0
+  const events: SavedExecutionEvent[] = []
+  for (const event of value.events) {
+    if (!isRecord(event) || !hasOnlyKeys(event, ['cursor', 'line', 'variables'])
+      || !Number.isInteger(event.cursor) || Number(event.cursor) <= previousCursor || Number(event.cursor) > entryCount
+      || !Number.isInteger(event.line) || Number(event.line) < 1 || Number(event.line) > lines || !isRecord(event.variables)) {
+      return invalidHistory('Saved script execution events do not match the source or timeline.')
+    }
+    const variables: Record<string, number> = {}
+    for (const [name, variable] of Object.entries(event.variables)) {
+      if (!/^[A-Za-z_$][\w$]*$/.test(name) || typeof variable !== 'number' || !Number.isFinite(variable)) {
+        return invalidHistory('Saved script variables must have valid names and finite numeric values.')
+      }
+      variables[name] = variable
+    }
+    previousCursor = Number(event.cursor)
+    events.push({ cursor: previousCursor, line: Number(event.line), variables })
+  }
+  return { ok: true, value: { kind: 'smart-script', source: value.source, arrayId: value.arrayId, events } }
+}
+
 export function validateHistory(value: unknown): Result<HistoryState, HistoryError> {
-  if (!isRecord(value) || !hasOnlyKeys(value, ['initialDocument', 'entries', 'cursor'])) return invalidHistory('History must contain only an initial document, entries, and cursor.')
+  if (!isRecord(value) || !hasOnlyKeys(value, ['initialDocument', 'entries', 'cursor', 'execution'])) return invalidHistory('History contains an unknown field.')
   const initial = validateBoard(value.initialDocument)
   if (!initial.ok) return invalidHistory(`Initial document is invalid: ${initial.error.message}`)
   if (!Array.isArray(value.entries) || !Number.isInteger(value.cursor) || Number(value.cursor) < 0 || Number(value.cursor) > value.entries.length) {
@@ -84,7 +113,14 @@ export function validateHistory(value: unknown): Result<HistoryState, HistoryErr
       return invalidHistory(`History entry ${index} cannot be replayed.`)
     }
   }
-  return { ok: true, value: { initialDocument: initial.value, entries, cursor: Number(value.cursor) } }
+  const execution = value.execution === undefined ? undefined : validateExecution(value.execution, entries.length)
+  if (execution && !execution.ok) return execution
+  return { ok: true, value: {
+    initialDocument: initial.value,
+    entries,
+    cursor: Number(value.cursor),
+    ...(execution?.ok ? { execution: execution.value } : {}),
+  } }
 }
 
 export function dispatch(state: HistoryState, operation: BoardOperation): Result<HistoryState, OperationError> {
@@ -94,7 +130,7 @@ export function dispatch(state: HistoryState, operation: BoardOperation): Result
   if (!applied.ok) return applied
   const entries = state.entries.slice(0, state.cursor)
   entries.push({ operation, inverse: applied.value.inverse })
-  return { ok: true, value: { ...state, entries, cursor: entries.length } }
+  return { ok: true, value: { initialDocument: state.initialDocument, entries, cursor: entries.length } }
 }
 export function undo(state: HistoryState): HistoryState {
   return state.cursor <= 0 ? state : { ...state, cursor: state.cursor - 1 }

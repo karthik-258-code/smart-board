@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import type { ArrayObject } from '../domain/model'
-import type { SmartScriptEvent } from '../execution/smartScript'
 
-export type SmartScriptView = { source: string; events: Array<SmartScriptEvent & { cursor: number }> }
+export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number> }> }
 
 const starterScript = 'for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}'
 
@@ -17,8 +16,8 @@ export function SmartScriptPanel({
   execution: SmartScriptView | null
   onRun: (source: string, arrayId: string) => void
 }) {
-  const [source, setSource] = useState(starterScript)
-  const [arrayId, setArrayId] = useState(arrays[0]?.id ?? '')
+  const [source, setSource] = useState(execution?.source ?? starterScript)
+  const [arrayId, setArrayId] = useState(execution?.arrayId ?? arrays[0]?.id ?? '')
   const selectedArrayId = arrays.some((array) => array.id === arrayId) ? arrayId : arrays[0]?.id ?? ''
   const currentEvent = execution?.events.find((event) => event.cursor === cursor)
   const lines = (execution?.source ?? source).split('\n')
