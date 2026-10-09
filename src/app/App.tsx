@@ -15,7 +15,7 @@ import { SaveStatus, type SaveState } from './SaveStatus'
 import { ThemeControl } from './ThemeControl'
 import { CodeTracePanel } from './CodeTracePanel'
 import { SmartScriptPanel, type SmartScriptView } from './SmartScriptPanel'
-import { runArrayTraversal } from '../execution/smartScript'
+import { runSmartScript } from '../execution/smartScript'
 import './App.css'
 import '../styles/themes.css'
 
@@ -163,7 +163,7 @@ function App() {
   }
 
   function runScript(source: string, arrayId: string) {
-    const result = runArrayTraversal(source, history, arrayId)
+    const result = runSmartScript(source, history, arrayId)
     if (!result.ok) {
       setError(`Line ${result.error.line}: ${result.error.message}`)
       return

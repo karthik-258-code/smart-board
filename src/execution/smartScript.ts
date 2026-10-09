@@ -4,7 +4,7 @@ import type { ArrayObject, BoardObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
-export type SmartScriptError = { code: 'unsupported_syntax' | 'missing_array' | 'ambiguous_mapping' | 'step_limit' | 'invalid_history'; message: string; line: number }
+export type SmartScriptError = { code: 'unsupported_syntax' | 'unsupported_input' | 'missing_array' | 'ambiguous_mapping' | 'step_limit' | 'invalid_history'; message: string; line: number }
 export type SmartScriptEvent = { line: number; variables: Record<string, number>; operation: BoardOperation }
 export type SmartScriptRun = { history: HistoryState; events: SmartScriptEvent[]; arrayName: string; indexName: string }
 
@@ -12,6 +12,24 @@ const HARD_ITERATION_LIMIT = 1000
 const HARD_SOURCE_LENGTH_LIMIT = 10_000
 const HARD_BODY_STATEMENT_LIMIT = 100
 const HARD_EVENT_LIMIT = 5_000
+
+export const binarySearchTemplate = [
+  'let target = 11;',
+  'let low = 0;',
+  'let high = values.length - 1;',
+  'while (low <= high) {',
+  '  let mid = Math.floor((low + high) / 2);',
+  '  highlight(mid);',
+  '  if (values[mid] === target) {',
+  '    found = mid;',
+  '    break;',
+  '  } else if (values[mid] < target) {',
+  '    low = mid + 1;',
+  '  } else {',
+  '    high = mid - 1;',
+  '  }',
+  '}',
+].join('\n')
 
 function fail(code: SmartScriptError['code'], message: string, line: number): Result<never, SmartScriptError> {
   return { ok: false, error: { code, message, line } }
@@ -120,4 +138,144 @@ export function runArrayTraversal(
   }
 
   return { ok: true, value: { history: nextHistory, events, arrayName, indexName } }
+}
+
+/** Interprets one canonical binary-search control-flow shape over numeric sorted arrays. */
+export function runBinarySearch(
+  source: string,
+  history: HistoryState,
+  arrayObjectId: string,
+  options: { maxIterations?: number } = {},
+): Result<SmartScriptRun, SmartScriptError> {
+  if (source.length > HARD_SOURCE_LENGTH_LIMIT) return fail('step_limit', `Script source is limited to ${HARD_SOURCE_LENGTH_LIMIT} characters.`, 1)
+  const maxIterations = options.maxIterations ?? HARD_ITERATION_LIMIT
+  if (!Number.isInteger(maxIterations) || maxIterations < 1 || maxIterations > HARD_ITERATION_LIMIT) {
+    return fail('step_limit', `Iteration limit must be between 1 and ${HARD_ITERATION_LIMIT}.`, 1)
+  }
+  const lines = source.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
+  const targetMatch = /^let target = (-?\d+(?:\.\d+)?);$/.exec(lines[0] ?? '')
+  const expected = [
+    null, 'let low = 0;', 'let high = values.length - 1;', 'while (low <= high) {',
+    'let mid = Math.floor((low + high) / 2);', 'highlight(mid);', 'if (values[mid] === target) {',
+    'found = mid;', 'break;', '} else if (values[mid] < target) {', 'low = mid + 1;', '} else {',
+    'high = mid - 1;', '}', '}',
+  ]
+  if (!targetMatch || lines.length !== expected.length || lines.some((line, index) => expected[index] !== null && line !== expected[index])) {
+    return fail('unsupported_syntax', 'Use the Binary Search template and change only the numeric target value.', 1)
+  }
+  const target = Number(targetMatch[1])
+  if (!Number.isFinite(target)) return fail('unsupported_input', 'The target must be a finite number.', 1)
+
+  const current = stateAt(history, history.cursor)
+  if (!current.ok) return fail('invalid_history', current.error.message, 1)
+  const array = current.value.objects.find((object): object is ArrayObject => object.id === arrayObjectId && object.type === 'array')
+  if (!array) return fail('missing_array', 'Select an array object before running this script.', 1)
+  const selectedArray = array
+  if (!selectedArray.values.every((value) => typeof value === 'number' && Number.isFinite(value))) {
+    return fail('unsupported_input', 'Binary search requires an array containing only finite numbers.', 1)
+  }
+  for (let index = 1; index < selectedArray.values.length; index += 1) {
+    if (Number(selectedArray.values[index - 1]) > Number(selectedArray.values[index])) {
+      return fail('unsupported_input', 'Binary search requires values sorted in ascending order.', 1)
+    }
+  }
+
+  const midPointers = current.value.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
+    object.type === 'pointer' && object.targetObjectId === selectedArray.id && object.name === 'mid',
+  )
+  const searchRanges = current.value.objects.filter((object): object is Extract<BoardObject, { type: 'range' }> =>
+    object.type === 'range' && object.targetObjectId === selectedArray.id && object.name === 'search',
+  )
+  if (midPointers.length > 1) return fail('ambiguous_mapping', 'More than one pointer named mid targets this array.', 5)
+  if (searchRanges.length > 1) return fail('ambiguous_mapping', 'More than one range named search targets this array.', 4)
+
+  let nextHistory = history
+  const events: SmartScriptEvent[] = []
+  const variables: Record<string, number> = { target, low: 0, high: array.values.length - 1 }
+  let iterations = 0
+  let finished = false
+
+  function applyStep(line: number, indices: number[], moveMid = false, updateRange = false): SmartScriptError | null {
+    const operations: BoardOperation[] = [{ type: 'array/set-highlight', objectId: selectedArray.id, indices }]
+    if (moveMid && midPointers[0]) operations.push({ type: 'pointer/move', objectId: midPointers[0].id, index: variables.mid })
+    if (updateRange && searchRanges[0]) {
+      const start = Math.min(Math.max(0, variables.low), selectedArray.values.length)
+      const endExclusive = Math.max(start, Math.min(variables.high + 1, selectedArray.values.length))
+      operations.push({ type: 'range/set', objectId: searchRanges[0].id, start, endExclusive })
+    }
+    for (const operation of operations) {
+      if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line }
+      const changed = dispatch(nextHistory, operation)
+      if (!changed.ok) return { code: 'invalid_history', message: changed.error.message, line }
+      nextHistory = changed.value
+      events.push({ line, variables: { ...variables }, operation })
+    }
+    return null
+  }
+
+  while (!finished) {
+    if (variables.low > variables.high) {
+      const error = applyStep(4, [], false, true)
+      if (error) return { ok: false, error }
+      break
+    }
+    if (iterations >= maxIterations) return fail('step_limit', `The search needs more than ${maxIterations} iterations.`, 4)
+    iterations += 1
+    {
+      const error = applyStep(4, [], false, true)
+      if (error) return { ok: false, error }
+    }
+    variables.mid = Math.floor((variables.low + variables.high) / 2)
+    {
+      const error = applyStep(5, [variables.mid], true)
+      if (error) return { ok: false, error }
+    }
+    {
+      const error = applyStep(6, [variables.mid], true)
+      if (error) return { ok: false, error }
+    }
+    const comparison = Number(array.values[variables.mid]) - target
+    {
+      const error = applyStep(7, [variables.mid])
+      if (error) return { ok: false, error }
+    }
+    if (comparison === 0) {
+      variables.found = variables.mid
+      for (const line of [8, 9]) {
+        const error = applyStep(line, [variables.mid])
+        if (error) return { ok: false, error }
+      }
+      finished = true
+    } else if (comparison < 0) {
+      {
+        const error = applyStep(10, [variables.mid])
+        if (error) return { ok: false, error }
+      }
+      variables.low = variables.mid + 1
+      {
+        const error = applyStep(11, [variables.mid], false, true)
+        if (error) return { ok: false, error }
+      }
+    } else {
+      {
+        const error = applyStep(10, [variables.mid])
+        if (error) return { ok: false, error }
+      }
+      {
+        const error = applyStep(12, [variables.mid])
+        if (error) return { ok: false, error }
+      }
+      variables.high = variables.mid - 1
+      {
+        const error = applyStep(13, [variables.mid], false, true)
+        if (error) return { ok: false, error }
+      }
+    }
+  }
+
+  return { ok: true, value: { history: nextHistory, events, arrayName: 'values', indexName: 'mid' } }
+}
+
+export function runSmartScript(source: string, history: HistoryState, arrayObjectId: string): Result<SmartScriptRun, SmartScriptError> {
+  return /^\s*let\s+target\s*=/.test(source) ? runBinarySearch(source, history, arrayObjectId) : runArrayTraversal(source, history, arrayObjectId)
 }

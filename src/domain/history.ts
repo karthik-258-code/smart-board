@@ -54,11 +54,12 @@ function invalidHistory(message: string): Result<never, HistoryError> {
   return { ok: false, error: { code: 'invalid_history', message } }
 }
 
-function validateExecution(value: unknown, entryCount: number): Result<SavedExecutionTrace, HistoryError> {
+function validateExecution(value: unknown, entryCount: number, document: BoardDocument): Result<SavedExecutionTrace, HistoryError> {
   if (!isRecord(value) || !hasOnlyKeys(value, ['kind', 'source', 'arrayId', 'events']) || value.kind !== 'smart-script'
     || typeof value.source !== 'string' || value.source.length > 10_000 || typeof value.arrayId !== 'string' || !value.arrayId
     || !Array.isArray(value.events) || value.events.length > 5_000) return invalidHistory('Saved script execution metadata is malformed.')
 
+  if (!document.objects.some((object) => object.id === value.arrayId && object.type === 'array')) return invalidHistory('Saved script execution must map to an array in the board.')
   const lines = value.source.replace(/\r\n?/g, '\n').split('\n').length
   let previousCursor = 0
   const events: SavedExecutionEvent[] = []
@@ -113,7 +114,7 @@ export function validateHistory(value: unknown): Result<HistoryState, HistoryErr
       return invalidHistory(`History entry ${index} cannot be replayed.`)
     }
   }
-  const execution = value.execution === undefined ? undefined : validateExecution(value.execution, entries.length)
+  const execution = value.execution === undefined ? undefined : validateExecution(value.execution, entries.length, document)
   if (execution && !execution.ok) return execution
   return { ok: true, value: {
     initialDocument: initial.value,

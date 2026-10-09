@@ -26,6 +26,30 @@ Each statement highlights the current array cell. If the selected array has one 
 
 Before the loop, scripts may declare unique integer variables such as `let total = 0;`. Accumulator statements update those variables and each timeline snapshot shows their values. Array accumulators require numeric values. Since the current visualization is an array, accumulator statements also highlight the value being read.
 
+### Binary search
+
+The panel can load a fixed control-flow template for binary search. Change only its numeric target:
+
+```ts
+let target = 11;
+let low = 0;
+let high = values.length - 1;
+while (low <= high) {
+  let mid = Math.floor((low + high) / 2);
+  highlight(mid);
+  if (values[mid] === target) {
+    found = mid;
+    break;
+  } else if (values[mid] < target) {
+    low = mid + 1;
+  } else {
+    high = mid - 1;
+  }
+}
+```
+
+The selected array must contain finite numeric values sorted in ascending order. The interpreter updates `low`, `high`, and `mid`, and adds `found` when it locates the target. It can move one pointer named `mid` and update one range named `search`; duplicate matching objects are reported as ambiguous. The range shows the active candidate interval and becomes empty when the target is absent.
+
 ## Execution and history
 
 The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; the editor highlights the active line and displays the snapshot at the current history cursor. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
@@ -34,4 +58,4 @@ The source is limited to 10,000 characters, the loop to 1,000 iterations, and it
 
 ## Explicit limits
 
-The current subset does not support arbitrary expressions, nested control flow, function definitions, input/output, assignment beyond integer accumulation, asynchronous code, or other data structures. It reports declared integer variables and the loop index. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary expressions, user-defined functions, input/output, asynchronous code, or other data structures. Binary-search control flow is fixed to the template above. Traversal reports declared integer variables and the loop index; binary search reports its bounds, midpoint, target, and found index when present. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.

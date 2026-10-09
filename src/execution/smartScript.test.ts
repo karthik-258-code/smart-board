@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from '../domain/model'
 import { dispatch, stateAt, type HistoryState } from '../domain/history'
-import { runArrayTraversal } from './smartScript'
+import { runArrayTraversal, runBinarySearch } from './smartScript'
 
 function historyWithArray(values: Array<string | number>, withPointer = false) {
   let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
@@ -100,5 +100,47 @@ describe('Smart Script array traversal', () => {
     const result = runArrayTraversal('for (let __proto__ = 0; __proto__ < values.length; __proto__++) {\n  highlight(__proto__);\n}', initial, 'values-board')
 
     expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 1 } })
+  })
+})
+
+describe('Smart Script binary search', () => {
+  const source = 'let target = 11;\nlet low = 0;\nlet high = values.length - 1;\nwhile (low <= high) {\n  let mid = Math.floor((low + high) / 2);\n  highlight(mid);\n  if (values[mid] === target) {\n    found = mid;\n    break;\n  } else if (values[mid] < target) {\n    low = mid + 1;\n  } else {\n    high = mid - 1;\n  }\n}'
+
+  it('finds a target, records low/high/mid, and synchronizes the active range and mid pointer', () => {
+    let initial = historyWithArray([2, 4, 7, 11, 18])
+    for (const object of [
+      { id: 'mid-pointer', type: 'pointer' as const, typeVersion: 1 as const, position: { x: 0, y: -30 }, name: 'mid', targetObjectId: 'values-board', index: 0 },
+      { id: 'search-range', type: 'range' as const, typeVersion: 1 as const, position: { x: 0, y: 80 }, name: 'search', targetObjectId: 'values-board', start: 0, endExclusive: 5 },
+    ]) {
+      const added = dispatch(initial, { type: 'object/add', object })
+      if (!added.ok) throw new Error(added.error.message)
+      initial = added.value
+    }
+    const result = runBinarySearch(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.at(-1)).toMatchObject({ line: 9, variables: { low: 3, high: 4, mid: 3, found: 3 } })
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'mid-pointer')).toMatchObject({ index: 3 })
+    expect(final.ok && final.value.objects.find((object) => object.id === 'search-range')).toMatchObject({ start: 3, endExclusive: 5 })
+  })
+
+  it('closes the search range when the target is not present', () => {
+    const initial = historyWithArray([2, 4, 7, 11, 18])
+    const result = runBinarySearch(source.replace('target = 11', 'target = 6'), initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const finalEvent = result.value.events.at(-1)
+    expect(finalEvent).toMatchObject({ variables: { low: 2, high: 1 } })
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'values-board')).toMatchObject({ highlightedIndices: [] })
+  })
+
+  it('rejects unsorted arrays and unsupported source without executing', () => {
+    const unsorted = historyWithArray([2, 8, 4])
+    expect(runBinarySearch(source, unsorted, 'values-board')).toMatchObject({ ok: false, error: { code: 'unsupported_input' } })
+    expect(runBinarySearch('while (true) { unsafe(); }', unsorted, 'values-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
   })
 })

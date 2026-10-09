@@ -174,6 +174,7 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .smart-script-controls select { min-height: 2rem; border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.45rem; background: var(--surface); color: var(--ink); }
 .smart-script-controls button { min-height: 2rem; border: 1px solid var(--accent-strong); border-radius: 6px; padding: 0.3rem 0.65rem; background: var(--accent-strong); color: white; font-weight: 700; cursor: pointer; }
 .smart-script-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+.smart-script-controls .template-control { border-color: var(--line); background: var(--surface); color: var(--ink); }
 .smart-script-editor-label { color: var(--ink-soft); font-size: 0.7rem; }
 .smart-script-editor { min-height: 4.5rem; width: 100%; resize: vertical; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem; background: var(--surface); color: var(--ink); font: 0.74rem/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
 .smart-script-inspection { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; color: var(--ink-soft); font-size: 0.7rem; }

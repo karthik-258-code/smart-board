@@ -82,6 +82,19 @@ describe('Smart Board app shell', () => {
     expect(screen.getByText('total = 24')).toBeInTheDocument()
   })
 
+  it('runs the binary-search template and exposes the found index', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Use binary search template' }))
+    const source = screen.getByRole('textbox', { name: 'Smart Script source' }) as HTMLTextAreaElement
+    fireEvent.change(source, { target: { value: source.value.replace('target = 11', 'target = 8') } })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('found = 1')).toBeInTheDocument()
+    expect(screen.getByText('Line 9')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Array: 4, 8, 12' }).querySelector('.array-cell-highlighted')).toBeInTheDocument()
+  })
+
   it('exposes an accessible board region', () => {
     render(<App />)
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ArrayObject } from '../domain/model'
+import { binarySearchTemplate } from '../execution/smartScript'
 
 export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number> }> }
 
@@ -39,6 +40,7 @@ export function SmartScriptPanel({
           {arrays.length === 0 ? <option value="">Add an array first</option> : arrays.map((array) => <option key={array.id} value={array.id}>Array: {array.values.join(', ') || 'empty'}</option>)}
         </select>
       </label>
+      <button type="button" className="template-control" onClick={() => setSource(binarySearchTemplate)}>Use binary search template</button>
       <button type="button" className="primary-control" disabled={!selectedArrayId} onClick={() => onRun(source, selectedArrayId)}>Run Smart Script</button>
     </div>
     <label className="smart-script-editor-label" htmlFor="smart-script-source">Source</label>
@@ -52,6 +54,6 @@ export function SmartScriptPanel({
       <span>Variables</span>
       {currentEvent ? Object.entries(currentEvent.variables).map(([name, value]) => <code key={name}>{name} = {value}</code>) : <span>No runtime snapshot at this step</span>}
     </div>
-    <p className="smart-script-help">Supported: a bounded <code>for</code> loop over <code>values</code> with <code>highlight(i)</code> or <code>visit(values[i])</code>. A matching pointer named <code>i</code> moves automatically. Other code is rejected; scripts are never evaluated as JavaScript.</p>
+    <p className="smart-script-help">Supported: array traversal with numeric accumulators, or the binary-search template. Traversal maps a matching index pointer; binary search maps a <code>mid</code> pointer and a range named <code>search</code>. Other code is rejected; scripts are never evaluated as JavaScript.</p>
   </section>
 }

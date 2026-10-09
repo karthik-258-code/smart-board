@@ -80,6 +80,11 @@ describe('history', () => {
     expect(validateHistory(state)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
   })
 
+  it('rejects a saved script mapped to an object that is not an array', () => {
+    const state = { initialDocument: initial, entries: [], cursor: 0, execution: { kind: 'smart-script', source: '', arrayId: 'missing', events: [] } }
+    expect(validateHistory(state)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+  })
+
   it('rejects invalid cursors, unknown fields, and broken future redo entries', () => {
     let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
     state = dispatchOrThrow(state, add('a', 'first'))
