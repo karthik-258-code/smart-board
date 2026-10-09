@@ -48,3 +48,12 @@
 - Update README with example catalog.
 - Run focused tests, full suite, build, and diff check.
 - Commit as `feat: add replayable algorithm examples`.
+
+## Completion record
+
+- Added four deterministic examples: array traversal, binary search, sliding window, and Fibonacci DP.
+- Examples are built through domain dispatch, validated as complete histories, and load at cursor zero.
+- Loading replaces populated boards only after confirmation; cancellation preserves the document and saved timeline.
+- Added replay and persisted-history interaction coverage.
+- Verification: focused tests passed (26), full suite passed (114 tests across 13 files), production build passed, and `git diff --check` passed.
+- Commit: `feat: add replayable algorithm examples`.

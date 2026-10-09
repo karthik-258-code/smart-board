@@ -1,10 +1,13 @@
 import type { ArrayObject } from '../domain/model'
+import { ExamplePicker } from './ExamplePicker'
 
 export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'stack' | 'queue' | 'pointer' | 'range'
 
-export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawing }: { onAdd: (type: BoardTool) => void; selectedArray: ArrayObject | null; drawingMode: boolean; onToggleDrawing: () => void }) {
+export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawing, onLoadExample }: { onAdd: (type: BoardTool) => void; selectedArray: ArrayObject | null; drawingMode: boolean; onToggleDrawing: () => void; onLoadExample: (id: string) => void }) {
   return (
     <nav className="board-toolbar" aria-label="Board tools">
+      <ExamplePicker onLoad={onLoadExample} />
+      <div className="toolbar-divider" />
       <p>Place on board</p>
       <button type="button" onClick={() => onAdd('note')}>Add note</button>
       <button type="button" onClick={() => onAdd('shape')}>Add rectangle</button>

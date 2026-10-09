@@ -140,6 +140,30 @@ describe('Smart Board app shell', () => {
     expect(savedBoard().objects).toHaveLength(2)
   })
 
+  it('loads a replayable algorithm example and persists its history', () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'array-traversal' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load example' }))
+    expect(screen.getByRole('button', { name: 'Array: 2, 4, 6, 8' })).toBeInTheDocument()
+    expect(screen.getByText('Step 0 of 7')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.entries).toHaveLength(7)
+    fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+    expect(screen.getByRole('button', { name: 'Array: 2, 4, 6, 8' }).querySelector('.array-cell-highlighted')).toBeInTheDocument()
+  })
+
+  it('keeps the current board when example replacement is canceled', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
+    const storedBefore = localStorage.getItem(storageKey)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'binary-search' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load example' }))
+    expect(window.confirm).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Note: New idea' })).toBeInTheDocument()
+    expect(localStorage.getItem(storageKey)).toBe(storedBefore)
+  })
+
   it('selects an object and edits its note and position from the inspector', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))

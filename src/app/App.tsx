@@ -4,6 +4,7 @@ import { createEmptyBoard, type BoardDocument, type BoardObject } from '../domai
 import { dispatch as dispatchHistory, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import { evaluateArrayComparison, type BoardOperation } from '../domain/operations'
 import { loadBoardHistory, saveBoardHistory } from '../persistence/localBoardStore'
+import { buildExampleHistory } from '../examples/catalog'
 import { BoardFileControls } from './BoardFileControls'
 import { PracticeDialog } from './PracticeDialog'
 import { BoardInspector, type ComparisonSummary } from './BoardInspector'
@@ -204,6 +205,36 @@ function App() {
     }
   }
 
+  function loadExample(exampleId: string) {
+    const result = buildExampleHistory(exampleId)
+    if (!result.ok) {
+      setError(result.error.message)
+      return
+    }
+    if ((board.objects.length > 0 || history.entries.length > 0)
+      && !window.confirm('Loading this example replaces the current board. Continue?')) return
+    setPlaying(false)
+    setPracticeId(null)
+    setSelectedId(null)
+    setError(null)
+    setHistory(result.value)
+    setPreserveSavedData(false)
+    setRecoveryNeeded(false)
+    if (!startup.storage) {
+      setSaveState('error')
+      setSaveProblem('Browser storage is unavailable. The example is only in this session.')
+      return
+    }
+    const saved = saveBoardHistory(startup.storage, storageKey, result.value)
+    if (saved.ok) {
+      setSaveState('saved')
+      setSaveProblem(null)
+    } else {
+      setSaveState('error')
+      setSaveProblem(saved.error.message)
+    }
+  }
+
   function addObject(type: BoardTool) {
     const position = nextObjectPosition(board.objects)
     let object: BoardObject
@@ -307,7 +338,7 @@ function App() {
       </div>
 
       <div className="workspace-layout">
-        <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} />
+        <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} onLoadExample={loadExample} />
         <section className="canvas-frame" aria-label="Board workspace">
           <div className="canvas-topline"><span>Untitled board</span><span>Drag to move · Click to edit</span></div>
           <BoardCanvas document={board} selectedId={selectedId} onSelect={setSelectedId} onOperation={onOperation} drawingMode={drawingMode} onCreateStroke={addStroke} />
