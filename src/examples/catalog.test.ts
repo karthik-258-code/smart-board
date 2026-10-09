@@ -5,7 +5,7 @@ import { stateAt } from '../domain/history'
 describe('algorithm examples', () => {
   it('provides validated, replayable examples for the initial catalog', () => {
     const examples = listAlgorithmExamples()
-    expect(examples.map((example) => example.id)).toEqual(['array-traversal', 'binary-search', 'sliding-window', 'fibonacci-dp'])
+    expect(examples.map((example) => example.id)).toEqual(['array-traversal', 'binary-search', 'sliding-window', 'fibonacci-dp', 'breadth-first-search', 'depth-first-search'])
     for (const example of examples) {
       const result = buildExampleHistory(example.id)
       expect(result.ok).toBe(true)
@@ -25,5 +25,12 @@ describe('algorithm examples', () => {
 
   it('reports unknown example IDs', () => {
     expect(buildExampleHistory('missing')).toMatchObject({ ok: false, error: { code: 'missing_example' } })
+  })
+
+  it('shows breadth-first and depth-first traversal orders over the same graph', () => {
+    const breadth = buildExampleHistory('breadth-first-search')
+    const depth = buildExampleHistory('depth-first-search')
+    expect(breadth.ok && breadth.value.entries.map((entry) => entry.operation.type === 'graph/set-highlighted' ? entry.operation.nodeIds.at(-1) : null)).toEqual(['a', 'b', 'c', 'd'])
+    expect(depth.ok && depth.value.entries.map((entry) => entry.operation.type === 'graph/set-highlighted' ? entry.operation.nodeIds.at(-1) : null)).toEqual(['a', 'b', 'd', 'c'])
   })
 })

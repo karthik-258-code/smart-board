@@ -57,3 +57,10 @@
 - Added replay and persisted-history interaction coverage.
 - Verification: focused tests passed (26), full suite passed (114 tests across 13 files), production build passed, and `git diff --check` passed.
 - Commit: `feat: add replayable algorithm examples`.
+
+### Graph traversal examples addition
+
+- Added replayable BFS and DFS histories over one shared four-vertex graph, with each step updating the visited set.
+- Expanded catalog tests to confirm BFS order A, B, C, D and DFS order A, B, D, C.
+- Updated README implementation and roadmap status.
+- Verification: full suite passed (134 tests across 15 files), production build passed, and `git diff --check` passed.

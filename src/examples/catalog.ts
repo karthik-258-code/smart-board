@@ -10,6 +10,20 @@ const array: BoardDocument['objects'][number] = {
   id: 'example-array', type: 'array', typeVersion: 1, position: { x: 120, y: 190 },
   values: [2, 4, 6, 8], highlightedIndices: [],
 }
+const traversalGraph: BoardDocument['objects'][number] = {
+  id: 'example-graph', type: 'graph', typeVersion: 1, position: { x: 150, y: 115 },
+  nodes: [
+    { id: 'a', label: 'A', position: { x: 45, y: 45 } },
+    { id: 'b', label: 'B', position: { x: 165, y: 45 } },
+    { id: 'c', label: 'C', position: { x: 45, y: 155 } },
+    { id: 'd', label: 'D', position: { x: 165, y: 155 } },
+  ],
+  edges: [
+    { id: 'ab', from: 'a', to: 'b' }, { id: 'ac', from: 'a', to: 'c' },
+    { id: 'bd', from: 'b', to: 'd' }, { id: 'cd', from: 'c', to: 'd' },
+  ],
+  highlightedNodeIds: [],
+}
 
 const examples: AlgorithmExample[] = [
   {
@@ -85,6 +99,22 @@ const examples: AlgorithmExample[] = [
       { type: 'table/add-dependency', objectId: 'example-table', dependency: { from: { row: 1, column: 2 }, to: { row: 1, column: 3 } } },
       { type: 'table/set-highlighted-cells', objectId: 'example-table', coordinates: [{ row: 1, column: 3 }] },
     ],
+  },
+  {
+    id: 'breadth-first-search', title: 'Breadth-first search', description: 'Explore neighbors level by level from vertex A.',
+    initialDocument: { id: 'breadth-first-search', schemaVersion: 1, objects: [
+      { ...traversalGraph },
+      { id: 'example-note', type: 'note', typeVersion: 1, position: { x: 150, y: 330 }, text: 'BFS visits the closest unvisited neighbors first.' },
+    ] },
+    operations: ['a', 'b', 'c', 'd'].map((nodeId) => ({ type: 'graph/set-highlighted', objectId: 'example-graph', nodeIds: ['a', 'b', 'c', 'd'].slice(0, ['a', 'b', 'c', 'd'].indexOf(nodeId) + 1) })),
+  },
+  {
+    id: 'depth-first-search', title: 'Depth-first search', description: 'Follow one branch deeply before backtracking.',
+    initialDocument: { id: 'depth-first-search', schemaVersion: 1, objects: [
+      { ...traversalGraph },
+      { id: 'example-note', type: 'note', typeVersion: 1, position: { x: 150, y: 330 }, text: 'DFS explores A → B → D, then backtracks to C.' },
+    ] },
+    operations: ['a', 'b', 'd', 'c'].map((nodeId) => ({ type: 'graph/set-highlighted', objectId: 'example-graph', nodeIds: ['a', 'b', 'd', 'c'].slice(0, ['a', 'b', 'd', 'c'].indexOf(nodeId) + 1) })),
   },
 ]
 

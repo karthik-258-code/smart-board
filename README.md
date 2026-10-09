@@ -37,7 +37,7 @@ The current app supports a manually authored board with:
 - Stack and queue objects with push/pop and enqueue/dequeue actions, correct LIFO/FIFO order, capacity limits, and undo/redo.
 - Singly linked lists with stable node IDs, visible next links, append/prepend/insert/remove/reverse actions, and replayable history.
 - Undirected graphs with labeled vertices, edges, highlight state, add/remove controls, and undoable history.
-- Replayable examples for array traversal, binary search, sliding window, and Fibonacci DP.
+- Replayable examples for array traversal, binary search, sliding window, Fibonacci DP, breadth-first search, and depth-first search.
 - Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
@@ -283,7 +283,7 @@ Represent changes as reversible steps and provide controls to run, pause, step, 
 
 ### Phase 4: Expand structures and examples
 
-Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, and four replayable examples are implemented. Remaining work: lesson sequencing, linked structures, trees, heaps, graphs, tries, and hash tables.
+Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, linked lists, editable graphs, and six replayable examples are implemented. Remaining work: lesson sequencing, trees, heaps, tries, and hash tables.
 
 ### Phase 5: Connect supported code
 
