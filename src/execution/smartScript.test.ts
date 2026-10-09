@@ -3,7 +3,7 @@ import { createEmptyBoard } from '../domain/model'
 import { dispatch, stateAt, type HistoryState } from '../domain/history'
 import { runArrayTraversal } from './smartScript'
 
-function historyWithArray(values: number[], withPointer = false) {
+function historyWithArray(values: Array<string | number>, withPointer = false) {
   let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
   const added = dispatch(history, { type: 'object/add', object: { id: 'values-board', type: 'array', typeVersion: 1, position: { x: 0, y: 0 }, values, highlightedIndices: [] } })
   if (!added.ok) throw new Error(added.error.message)
@@ -42,6 +42,18 @@ describe('Smart Script array traversal', () => {
     expect(final.ok && final.value.objects.find((object) => object.id === 'pointer-i')).toMatchObject({ index: 1 })
   })
 
+  it('tracks a numeric accumulator and its snapshots while visiting array values', () => {
+    const initial = historyWithArray([4, 8, 12])
+    const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.filter((event) => event.line === 3).map((event) => event.variables.total)).toEqual([4, 12, 24])
+    expect(result.value.events.filter((event) => event.line === 4).map((event) => event.variables.total)).toEqual([4, 12, 24])
+    expect(result.value.events.at(-1)?.variables).toEqual({ total: 24, i: 2 })
+  })
+
   it('rejects unsupported code with a source-line diagnostic without changing history', () => {
     const initial = historyWithArray([1])
     const result = runArrayTraversal('while (true) { process.exit(); }', initial, 'values-board')
@@ -55,5 +67,31 @@ describe('Smart Script array traversal', () => {
     const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', initial, 'values-board', { maxIterations: 2 })
 
     expect(result).toMatchObject({ ok: false, error: { code: 'step_limit', line: 1 } })
+  })
+
+  it('reports an ambiguous pointer mapping rather than moving an arbitrary pointer', () => {
+    const initial = historyWithArray([4, 8], true)
+    const duplicate = dispatch(initial, { type: 'object/add', object: { id: 'pointer-i-duplicate', type: 'pointer', typeVersion: 1, position: { x: 20, y: -30 }, name: 'i', targetObjectId: 'values-board', index: 0 } })
+    expect(duplicate.ok).toBe(true)
+    if (!duplicate.ok) return
+
+    const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', duplicate.value, 'values-board')
+    expect(result).toMatchObject({ ok: false, error: { code: 'ambiguous_mapping', line: 1 } })
+  })
+
+  it('rejects numeric accumulation over text without returning partial history', () => {
+    const initial = historyWithArray(['word'])
+    const result = runArrayTraversal('let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n}', initial, 'values-board')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 3 } })
+    expect(initial.cursor).toBe(1)
+  })
+
+  it('returns an empty trace for an empty selected array', () => {
+    const initial = historyWithArray([])
+    const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events).toHaveLength(0)
   })
 })

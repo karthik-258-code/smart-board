@@ -49,7 +49,7 @@ The current app supports a manually authored board with:
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports a `for (let i = 0; i < values.length; i++)` loop with `highlight(i)`, `highlight(values[i])`, or `visit(values[i])` statements. Source length, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
+Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports integer declarations, a `for (let i = 0; i < values.length; i++)` loop, `highlight(i)` or `visit(values[i])` statements, and numeric accumulator updates such as `total += values[i]`. A matching pointer named `i` moves automatically. Source length, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
 
 ## Project description
 

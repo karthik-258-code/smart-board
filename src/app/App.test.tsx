@@ -57,6 +57,18 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('button', { name: 'Array: 4, 8, 12' }).querySelector('.array-cell-highlighted')).not.toBeInTheDocument()
   })
 
+  it('shows accumulator variables at the matching execution step', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), { target: { value: 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('total = 24')).toBeInTheDocument()
+    expect(screen.getByText('i = 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(screen.getByText('total = 24')).toBeInTheDocument()
+  })
+
   it('exposes an accessible board region', () => {
     render(<App />)
 

@@ -18,9 +18,13 @@ The loop variable may use another identifier in place of `i`. Its start must be 
 highlight(i);
 highlight(values[i]);
 visit(values[i]);
+total += values[i];
+total += i;
 ```
 
 Each statement highlights the current array cell. If the selected array has one pointer named after the loop variable, the runner also moves that pointer to the current index. Multiple matching pointers are considered ambiguous and stop execution.
+
+Before the loop, scripts may declare unique integer variables such as `let total = 0;`. Accumulator statements update those variables and each timeline snapshot shows their values. Array accumulators require numeric values. Since the current visualization is an array, accumulator statements also highlight the value being read.
 
 ## Execution and history
 
@@ -30,4 +34,4 @@ The source is limited to 10,000 characters, the loop to 1,000 iterations, and it
 
 ## Explicit limits
 
-The current subset does not support arbitrary expressions, nested control flow, function definitions, input/output, mutation of source variables, asynchronous code, or other data structures. It only reports the loop index as a runtime variable. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary expressions, nested control flow, function definitions, input/output, assignment beyond integer accumulation, asynchronous code, or other data structures. It reports declared integer variables and the loop index. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
