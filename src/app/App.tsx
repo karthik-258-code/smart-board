@@ -217,6 +217,8 @@ function App() {
       cells: [[null, null, null], [null, null, null], [null, null, null]], highlightedCells: [], dependencies: [],
     }
     else if (type === 'checkpoint') object = { id: createObjectId(), type: 'checkpoint', typeVersion: 1, position, prompt: '', answer: '', hint: '' }
+    else if (type === 'stack') object = { id: createObjectId(), type: 'container', typeVersion: 1, position, kind: 'stack', values: [] }
+    else if (type === 'queue') object = { id: createObjectId(), type: 'container', typeVersion: 1, position, kind: 'queue', values: [] }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

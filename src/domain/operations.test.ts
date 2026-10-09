@@ -11,6 +11,8 @@ const table: BoardObject = {
   rowLabels: ['0', '1'], columnLabels: ['0', '1'], cells: [[null, null], [null, null]], highlightedCells: [], dependencies: [],
 }
 const checkpoint: BoardObject = { id: 'check-1', type: 'checkpoint', typeVersion: 1, position: { x: 0, y: 0 }, prompt: 'Next?', answer: '5', hint: 'Count up.' }
+const stack: BoardObject = { id: 'stack-1', type: 'container', typeVersion: 1, position: { x: 0, y: 0 }, kind: 'stack', values: [3, 8] }
+const queue: BoardObject = { id: 'queue-1', type: 'container', typeVersion: 1, position: { x: 0, y: 0 }, kind: 'queue', values: [3, 8] }
 
 function board(objects: BoardObject[] = [array]): BoardDocument {
   return { id: 'board-1', schemaVersion: 1, objects }
@@ -30,6 +32,9 @@ describe('applyOperation', () => {
     { name: 'highlight table cells', document: board([table]), operation: { type: 'table/set-highlighted-cells', objectId: 'table-1', coordinates: [{ row: 0, column: 1 }] }, expected: [{ ...table, highlightedCells: [{ row: 0, column: 1 }] }] },
     { name: 'add table dependency', document: board([table]), operation: { type: 'table/add-dependency', objectId: 'table-1', dependency: { from: { row: 0, column: 0 }, to: { row: 1, column: 1 } } }, expected: [{ ...table, dependencies: [{ from: { row: 0, column: 0 }, to: { row: 1, column: 1 } }] }] },
     { name: 'update checkpoint', document: board([checkpoint]), operation: { type: 'checkpoint/update', objectId: 'check-1', prompt: 'What next?', answer: '6', hint: 'Add one.' }, expected: [{ ...checkpoint, prompt: 'What next?', answer: '6', hint: 'Add one.' }] },
+    { name: 'push onto stack', document: board([stack]), operation: { type: 'container/push', objectId: 'stack-1', value: 7 }, expected: [{ ...stack, values: [3, 8, 7] }] },
+    { name: 'pop from stack top', document: board([stack]), operation: { type: 'container/remove', objectId: 'stack-1' }, expected: [{ ...stack, values: [3] }] },
+    { name: 'dequeue from queue front', document: board([queue]), operation: { type: 'container/remove', objectId: 'queue-1' }, expected: [{ ...queue, values: [8] }] },
   ]
 
   it.each(cases)('applies and inverses $name', ({ document, operation, expected }) => {
@@ -86,6 +91,20 @@ describe('applyOperation', () => {
     const added = applyOperation(document, { type: 'table/add-dependency', objectId: 'table-1', dependency: edge })
     if (!added.ok) throw new Error('Expected valid dependency to add')
     expect(applyOperation(added.value.document, { type: 'table/add-dependency', objectId: 'table-1', dependency: edge })).toMatchObject({ ok: false, error: { code: 'duplicate_dependency' } })
+  })
+
+  it('rejects empty removals, full pushes, and invalid container values atomically', () => {
+    const emptyStack: BoardObject = { ...stack, values: [] }
+    const fullQueue: BoardObject = { ...queue, values: Array.from({ length: 20 }, (_, index) => index) }
+    for (const [document, operation] of [
+      [board([emptyStack]), { type: 'container/remove', objectId: 'stack-1' }],
+      [board([fullQueue]), { type: 'container/push', objectId: 'queue-1', value: 20 }],
+      [board([stack]), { type: 'container/push', objectId: 'stack-1', value: Number.NaN }],
+    ] as Array<[BoardDocument, BoardOperation]>) {
+      const original = structuredClone(document)
+      expect(applyOperation(document, operation)).toMatchObject({ ok: false })
+      expect(document).toEqual(original)
+    }
   })
 
   it('sets a pointer name and returns the prior name as its inverse', () => {

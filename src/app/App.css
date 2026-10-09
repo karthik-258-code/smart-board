@@ -105,6 +105,11 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .practice-feedback, .practice-reveal { padding: 0.7rem; border-radius: 9px; background: var(--surface-muted); line-height: 1.45; }
 .practice-feedback { color: var(--accent); font-weight: 700; }
 .practice-reveals { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+.container-surface { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.container-title, .container-end-label { fill: var(--ink-soft); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
+.container-cell { fill: var(--array-cell); stroke: var(--accent); stroke-width: 1.4; }
+.container-value { fill: var(--ink); font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.container-empty { fill: var(--ink-soft); font-size: 11px; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

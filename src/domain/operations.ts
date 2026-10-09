@@ -22,6 +22,9 @@ export type BoardOperation =
   | { type: 'table/add-dependency'; objectId: string; dependency: TableDependency }
   | { type: 'table/remove-dependency'; objectId: string; dependency: TableDependency }
   | { type: 'checkpoint/update'; objectId: string; prompt: string; answer: string; hint: string }
+  | { type: 'container/push'; objectId: string; value: string | number }
+  | { type: 'container/remove'; objectId: string }
+  | { type: 'container/restore-values'; objectId: string; values: Array<string | number> }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -269,6 +272,29 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
       if (current.type !== 'checkpoint') return fail('incompatible_object', 'Operation requires a checkpoint.', current.id)
       updated = { ...current, prompt: operation.prompt, answer: operation.answer, hint: operation.hint }
       inverse = { type: operation.type, objectId: current.id, prompt: current.prompt, answer: current.answer, hint: current.hint }
+      break
+    case 'container/push':
+      if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
+      if (current.values.length >= 20) return fail('container_full', 'Container cannot hold more than 20 values.', current.id)
+      if (typeof operation.value === 'number' && !Number.isFinite(operation.value)) return fail('invalid_value', 'Container values must be finite numbers or text.', current.id)
+      updated = { ...current, values: [...current.values, operation.value] }
+      inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+      break
+    case 'container/remove':
+      if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
+      if (current.values.length === 0) return fail('empty_container', 'Cannot remove a value from an empty container.', current.id)
+      {
+        const values = [...current.values]
+        if (current.kind === 'stack') values.pop()
+        else values.shift()
+        updated = { ...current, values }
+        inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+      }
+      break
+    case 'container/restore-values':
+      if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
+      updated = { ...current, values: operation.values }
+      inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
       break
   }
 

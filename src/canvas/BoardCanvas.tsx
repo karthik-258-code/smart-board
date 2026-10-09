@@ -139,7 +139,7 @@ export function BoardCanvas({ document, selectedId, onSelect, onOperation, drawi
           )
         })}
       </svg>
-      {document.objects.length === 0 && <p className="canvas-empty">Add a note, shape, array, or DP table, or choose Draw to sketch.</p>}
+      {document.objects.length === 0 && <p className="canvas-empty">Add a note, array, table, stack, queue, or checkpoint, or choose Draw to sketch.</p>}
     </section>
   )
 }

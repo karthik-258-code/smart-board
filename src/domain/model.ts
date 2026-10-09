@@ -46,8 +46,9 @@ export type TableObject = BaseObject & {
 }
 export type StrokeObject = BaseObject & { type: 'stroke'; points: BoardPosition[]; color: 'ink' }
 export type CheckpointObject = BaseObject & { type: 'checkpoint'; prompt: string; answer: string; hint: string }
+export type ContainerObject = BaseObject & { type: 'container'; kind: 'stack' | 'queue'; values: Array<string | number> }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject
 
 export type BoardDocument = {
   id: string

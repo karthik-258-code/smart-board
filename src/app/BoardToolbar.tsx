@@ -1,6 +1,6 @@
 import type { ArrayObject } from '../domain/model'
 
-export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'pointer' | 'range'
+export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'stack' | 'queue' | 'pointer' | 'range'
 
 export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawing }: { onAdd: (type: BoardTool) => void; selectedArray: ArrayObject | null; drawingMode: boolean; onToggleDrawing: () => void }) {
   return (
@@ -12,6 +12,8 @@ export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawin
       <button type="button" onClick={() => onAdd('empty-array')}>Add empty array</button>
       <button type="button" onClick={() => onAdd('table')}>Add DP table</button>
       <button type="button" onClick={() => onAdd('checkpoint')}>Add checkpoint</button>
+      <button type="button" onClick={() => onAdd('stack')}>Add stack</button>
+      <button type="button" onClick={() => onAdd('queue')}>Add queue</button>
       <button type="button" aria-pressed={drawingMode} onClick={onToggleDrawing}>{drawingMode ? 'Finish drawing' : 'Draw'}</button>
       <div className="toolbar-divider" />
       <p>Algorithm markers</p>

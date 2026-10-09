@@ -103,6 +103,31 @@ describe('Smart Board app shell', () => {
     })
   })
 
+  it('uses stack LIFO and queue FIFO actions with reversible history', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add stack' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'stack value' }), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'stack value' }), { target: { value: '8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    expect(screen.getByRole('button', { name: 'Stack: 4, 8' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Pop' }))
+    expect(screen.getByRole('button', { name: 'Stack: 4' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Stack: 4, 8' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add queue' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'queue value' }), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enqueue' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'queue value' }), { target: { value: '7' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enqueue' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Dequeue' }))
+    expect(screen.getByRole('button', { name: 'Queue: 7' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('button', { name: 'Queue: 3, 7' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').objects).toHaveLength(2)
+  })
+
   it('selects an object and edits its note and position from the inspector', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))

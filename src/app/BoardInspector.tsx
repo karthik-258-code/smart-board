@@ -188,6 +188,24 @@ function TableControls({ object, onOperation }: { object: TableObject; onOperati
   </div>
 }
 
+function ContainerControls({ object, onOperation }: { object: Extract<BoardObject, { type: 'container' }>; onOperation: (operation: BoardOperation) => void }) {
+  const [value, setValue] = useState('')
+  const actionName = object.kind === 'stack' ? 'Push' : 'Enqueue'
+  const removeName = object.kind === 'stack' ? 'Pop' : 'Dequeue'
+  const parsed = value.trim() !== '' && Number.isFinite(Number(value)) ? Number(value) : value
+  return <div className="array-controls">
+    <p className="inspector-value">{object.kind === 'stack' ? 'Last in, first out.' : 'First in, first out.'} {object.values.length} of 20 values.</p>
+    <label className="field-control">Value
+      <input aria-label={`${object.kind} value`} value={value} onChange={(event) => setValue(event.target.value)} />
+    </label>
+    <button type="button" disabled={object.values.length >= 20} onClick={() => {
+      onOperation({ type: 'container/push', objectId: object.id, value: parsed })
+      setValue('')
+    }}>{actionName}</button>
+    <button type="button" disabled={object.values.length === 0} onClick={() => onOperation({ type: 'container/remove', objectId: object.id })}>{removeName}</button>
+  </div>
+}
+
 export function BoardInspector({
   object,
   onOperation,
@@ -232,6 +250,7 @@ export function BoardInspector({
             </label>
             <button type="button" disabled={!object.prompt.trim()} onClick={() => onPractice(object.id)}>Practice checkpoint</button>
           </div>}
+          {object.type === 'container' && <ContainerControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed-array, timeline playback, local persistence, portable board files, DP tables, freehand drawing, and initial practice checkpoints are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed-array, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -34,6 +34,7 @@ The current app supports a manually authored board with:
 - Timeline autoplay with accessible play/pause and automatic stop at the final step.
 - Labeled 3×3 DP tables with editable cells, highlights, dependency arrows, and reversible history operations.
 - Prediction checkpoints with authoring, exact answer checking, optional hints, and answer reveal. Learner attempts stay transient.
+- Stack and queue objects with push/pop and enqueue/dequeue actions, correct LIFO/FIFO order, capacity limits, and undo/redo.
 - Local browser saving and restore. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
@@ -279,7 +280,7 @@ Represent changes as reversible steps and provide controls to run, pause, step, 
 
 ### Phase 4: Expand structures and examples
 
-Initial DP tables, dependency arrows, and prediction checkpoints are implemented. Remaining work: lesson sequencing, linked structures, stacks, queues, trees, heaps, graphs, tries, hash tables, and prepared examples.
+Initial DP tables, dependency arrows, prediction checkpoints, stacks, and queues are implemented. Remaining work: lesson sequencing, linked structures, trees, heaps, graphs, tries, hash tables, and prepared examples.
 
 ### Phase 5: Connect supported code
 

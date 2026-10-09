@@ -10,6 +10,7 @@ import type {
   TableObject,
   StrokeObject,
   CheckpointObject,
+  ContainerObject,
 } from './model'
 import type { Result } from './result'
 
@@ -111,6 +112,9 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
         && value.points.every((point) => isRecord(point) && hasOnlyFields(point, ['x', 'y']) && isFiniteNumber(point.x) && isFiniteNumber(point.y))
     case 'checkpoint':
       return typeof value.prompt === 'string' && typeof value.answer === 'string' && typeof value.hint === 'string'
+    case 'container':
+      return (value.kind === 'stack' || value.kind === 'queue') && Array.isArray(value.values) && value.values.length <= 20
+        && value.values.every((item) => typeof item === 'string' || isFiniteNumber(item))
   }
 }
 
@@ -173,6 +177,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'checkpoint',
     typeVersion: 1,
     validate: (value) => validateObject<CheckpointObject>(value, 'checkpoint', ['prompt', 'answer', 'hint']),
+  },
+  container: {
+    type: 'container',
+    typeVersion: 1,
+    validate: (value) => validateObject<ContainerObject>(value, 'container', ['kind', 'values']),
   },
 }
 

@@ -53,3 +53,9 @@
 - Update README.
 - Run focused tests, full suite, build, and diff check.
 - Commit as `feat: add stacks and queues`.
+
+## Completion record
+
+- Added strict stack/queue objects, capacity and value validation, endpoint-specific operations, vertical/horizontal renderers, and inspector controls.
+- Verification: focused app/domain tests passed; full suite passed (99 tests); production build succeeded; `git diff --check` passed.
+- Undo restores exact value order and types for both structures.
