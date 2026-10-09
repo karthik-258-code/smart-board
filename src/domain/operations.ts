@@ -1,4 +1,4 @@
-import type { ArrayObject, BinaryTreeNode, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
+import type { ArrayObject, BinaryTreeNode, BoardDocument, BoardObject, BoardPosition, GraphEdge, GraphNode, HashEntry, LinkedListNode, PointerObject, RangeObject, TableCoordinate, TableDependency } from './model'
 import { validateBoard } from './objectRegistry'
 import type { Result } from './result'
 
@@ -39,6 +39,9 @@ export type BoardOperation =
   | { type: 'tree/remove-subtree'; objectId: string; nodeId: string }
   | { type: 'tree/set-highlighted'; objectId: string; nodeIds: string[] }
   | { type: 'tree/restore-state'; objectId: string; rootId: string | null; nodes: BinaryTreeNode[]; highlightedNodeIds: string[] }
+  | { type: 'hash-table/set'; objectId: string; key: string; value: string | number }
+  | { type: 'hash-table/remove'; objectId: string; key: string }
+  | { type: 'hash-table/restore-entries'; objectId: string; entries: HashEntry[] }
 
 export type OperationError = { code: string; message: string; objectId?: string; index?: number }
 
@@ -435,6 +438,31 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         }
         updated = { ...current, rootId, nodes, highlightedNodeIds }
         inverse = { type: 'tree/restore-state', objectId: current.id, ...prior }
+      }
+      break
+    case 'hash-table/set':
+    case 'hash-table/remove':
+    case 'hash-table/restore-entries':
+      if (current.type !== 'hash-table') return fail('incompatible_object', 'Operation requires a hash table.', current.id)
+      {
+        const priorEntries = current.entries
+        let entries = [...current.entries]
+        if (operation.type === 'hash-table/set') {
+          if (typeof operation.key !== 'string' || !operation.key.trim()) return fail('invalid_key', 'Hash table keys cannot be empty.', current.id)
+          if (typeof operation.value !== 'string' && typeof operation.value !== 'number' || typeof operation.value === 'number' && !Number.isFinite(operation.value)) return fail('invalid_value', 'Values must be text or finite numbers.', current.id)
+          const index = entries.findIndex((entry) => entry.key === operation.key)
+          if (index < 0 && entries.length >= 50) return fail('hash_table_full', 'Hash table cannot hold more than 50 entries.', current.id)
+          if (index < 0) entries.push({ key: operation.key, value: operation.value })
+          else entries[index] = { key: operation.key, value: operation.value }
+        } else if (operation.type === 'hash-table/remove') {
+          if (!entries.some((entry) => entry.key === operation.key)) return fail('missing_key', 'Key does not exist.', current.id)
+          entries = entries.filter((entry) => entry.key !== operation.key)
+        } else {
+          if (!Array.isArray(operation.entries)) return fail('invalid_entries', 'Restored entries must be a list.', current.id)
+          entries = operation.entries
+        }
+        updated = { ...current, entries }
+        inverse = { type: 'hash-table/restore-entries', objectId: current.id, entries: priorEntries }
       }
       break
   }

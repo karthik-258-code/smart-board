@@ -26,6 +26,8 @@ const operationFields: Record<string, string[]> = {
   'graph/set-highlighted': ['objectId', 'nodeIds'], 'graph/restore-state': ['objectId', 'nodes', 'edges', 'highlightedNodeIds'],
   'tree/insert': ['objectId', 'node', 'parentId', 'side'], 'tree/remove-subtree': ['objectId', 'nodeId'],
   'tree/set-highlighted': ['objectId', 'nodeIds'], 'tree/restore-state': ['objectId', 'rootId', 'nodes', 'highlightedNodeIds'],
+  'hash-table/set': ['objectId', 'key', 'value'], 'hash-table/remove': ['objectId', 'key'],
+  'hash-table/restore-entries': ['objectId', 'entries'],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

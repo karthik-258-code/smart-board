@@ -1,7 +1,7 @@
 import type { ArrayObject } from '../domain/model'
 import { ExamplePicker } from './ExamplePicker'
 
-export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'stack' | 'queue' | 'linked-list' | 'graph' | 'binary-tree' | 'pointer' | 'range'
+export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'stack' | 'queue' | 'linked-list' | 'graph' | 'binary-tree' | 'hash-table' | 'pointer' | 'range'
 
 export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawing, onLoadExample }: { onAdd: (type: BoardTool) => void; selectedArray: ArrayObject | null; drawingMode: boolean; onToggleDrawing: () => void; onLoadExample: (id: string) => void }) {
   return (
@@ -20,6 +20,7 @@ export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawin
       <button type="button" onClick={() => onAdd('linked-list')}>Add linked list</button>
       <button type="button" onClick={() => onAdd('graph')}>Add graph</button>
       <button type="button" onClick={() => onAdd('binary-tree')}>Add binary tree</button>
+      <button type="button" onClick={() => onAdd('hash-table')}>Add hash table</button>
       <button type="button" aria-pressed={drawingMode} onClick={onToggleDrawing}>{drawingMode ? 'Finish drawing' : 'Draw'}</button>
       <div className="toolbar-divider" />
       <p>Algorithm markers</p>

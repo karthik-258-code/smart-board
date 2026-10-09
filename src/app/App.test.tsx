@@ -107,6 +107,24 @@ describe('Smart Board app shell', () => {
     expect(tree.querySelector('.tree-node-highlighted')).toBeInTheDocument()
   })
 
+  it('shows hash collisions and replays key updates and removals', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add hash table' }))
+    const table = within(screen.getByRole('region', { name: 'Board canvas' })).getByRole('button', { name: /Hash table/ })
+    expect(table.querySelectorAll('.hash-bucket')).toHaveLength(7)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hash key' }), { target: { value: 'ab' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hash value' }), { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set key' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hash key' }), { target: { value: 'ba' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hash value' }), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set key' }))
+    await waitFor(() => expect(table.querySelector('.hash-bucket[data-bucket="6"]')).toHaveTextContent('ab: 1 · ba: 2'))
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(table.querySelector('.hash-bucket[data-bucket="6"]')).not.toHaveTextContent('ba: 2')
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(table.querySelector('.hash-bucket[data-bucket="6"]')).toHaveTextContent('ba: 2')
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

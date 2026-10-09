@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import type { BinaryTreeObject, BoardObject, GraphObject, LinkedListObject } from '../domain/model'
+import type { BinaryTreeObject, BoardObject, GraphObject, HashTableObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { TableObject } from '../domain/model'
+import { hashBucketForKey } from '../domain/hashTable'
 
 export type ComparisonSummary = {
   arrayId: string
@@ -120,6 +121,30 @@ function BinaryTreeControls({ object, onOperation }: { object: BinaryTreeObject;
         onOperation({ type: 'tree/set-highlighted', objectId: object.id, nodeIds })
       }} />{String(node.value)}</label>
       <button type="button" aria-label={`Remove subtree at ${node.value}`} onClick={() => onOperation({ type: 'tree/remove-subtree', objectId: object.id, nodeId: node.id })}>Remove subtree</button>
+    </div>)}
+  </div>
+}
+
+function HashTableControls({ object, onOperation }: { object: HashTableObject; onOperation: (operation: BoardOperation) => void }) {
+  const [key, setKey] = useState('')
+  const [value, setValue] = useState('')
+  return <div className="array-controls hash-table-controls">
+    <p className="inspector-value">{object.entries.length} of 50 entries · separate chaining</p>
+    <label className="field-control">Key
+      <input aria-label="Hash key" value={key} onChange={(event) => setKey(event.target.value)} />
+    </label>
+    <label className="field-control">Value
+      <input aria-label="Hash value" value={value} onChange={(event) => setValue(event.target.value)} />
+    </label>
+    {key.trim() && <p className="inspector-value">Hash bucket: {hashBucketForKey(key, object.bucketCount)}</p>}
+    <button type="button" disabled={!key.trim() || (object.entries.length >= 50 && !object.entries.some((entry) => entry.key === key))} onClick={() => {
+      onOperation({ type: 'hash-table/set', objectId: object.id, key, value: parseArrayValue(value) })
+      setKey('')
+      setValue('')
+    }}>Set key</button>
+    {object.entries.map((entry) => <div className="graph-node-control" key={entry.key}>
+      <span>{entry.key}: {String(entry.value)} · bucket {hashBucketForKey(entry.key, object.bucketCount)}</span>
+      <button type="button" aria-label={`Remove key ${entry.key}`} onClick={() => onOperation({ type: 'hash-table/remove', objectId: object.id, key: entry.key })}>Remove</button>
     </div>)}
   </div>
 }
@@ -363,6 +388,7 @@ export function BoardInspector({
           {object.type === 'linked-list' && <LinkedListControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'graph' && <GraphControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'binary-tree' && <BinaryTreeControls key={object.id} object={object} onOperation={onOperation} />}
+          {object.type === 'hash-table' && <HashTableControls key={object.id} object={object} onOperation={onOperation} />}
           {object.type === 'pointer' && (
             <>
               <label className="field-control">Pointer name

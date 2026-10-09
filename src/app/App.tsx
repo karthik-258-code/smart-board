@@ -284,6 +284,7 @@ function App() {
         { id: ids[6], value: 14, leftId: null, rightId: null, position: { x: 265, y: 190 } },
       ] }
     }
+    else if (type === 'hash-table') object = { id: createObjectId(), type: 'hash-table', typeVersion: 1, position, bucketCount: 7, entries: [] }
     else {
       if (!selectedArray) return
       if (type === 'pointer') {

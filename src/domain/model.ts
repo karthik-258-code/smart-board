@@ -54,8 +54,10 @@ export type GraphEdge = { id: string; from: string; to: string }
 export type GraphObject = BaseObject & { type: 'graph'; nodes: GraphNode[]; edges: GraphEdge[]; highlightedNodeIds: string[] }
 export type BinaryTreeNode = { id: string; value: string | number; leftId: string | null; rightId: string | null; position: BoardPosition }
 export type BinaryTreeObject = BaseObject & { type: 'binary-tree'; rootId: string | null; nodes: BinaryTreeNode[]; highlightedNodeIds: string[] }
+export type HashEntry = { key: string; value: string | number }
+export type HashTableObject = BaseObject & { type: 'hash-table'; bucketCount: number; entries: HashEntry[] }
 
-export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject | GraphObject | BinaryTreeObject
+export type BoardObject = NoteObject | ShapeObject | ArrayObject | PointerObject | RangeObject | TableObject | StrokeObject | CheckpointObject | ContainerObject | LinkedListObject | GraphObject | BinaryTreeObject | HashTableObject
 
 export type BoardDocument = {
   id: string

@@ -11,6 +11,7 @@ import { ContainerRenderer } from './objectRenderers/ContainerRenderer'
 import { LinkedListRenderer } from './objectRenderers/LinkedListRenderer'
 import { GraphRenderer } from './objectRenderers/GraphRenderer'
 import { BinaryTreeRenderer } from './objectRenderers/BinaryTreeRenderer'
+import { HashTableRenderer } from './objectRenderers/HashTableRenderer'
 
 function labelFor(object: BoardObject): string {
   switch (object.type) {
@@ -26,6 +27,7 @@ function labelFor(object: BoardObject): string {
     case 'linked-list': return `Linked list: ${object.nodes.map((node) => node.value).join(' → ') || 'empty'}`
     case 'graph': return `Graph: ${object.nodes.length} vertices, ${object.edges.length} edges`
     case 'binary-tree': return `Binary tree: ${object.nodes.length} nodes`
+    case 'hash-table': return `Hash table: ${object.entries.length} entries in ${object.bucketCount} buckets`
   }
 }
 
@@ -83,6 +85,7 @@ export function ObjectRenderer({
       {object.type === 'linked-list' && <LinkedListRenderer object={object} />}
       {object.type === 'graph' && <GraphRenderer object={object} />}
       {object.type === 'binary-tree' && <BinaryTreeRenderer object={object} />}
+      {object.type === 'hash-table' && <HashTableRenderer object={object} />}
     </g>
   )
 }

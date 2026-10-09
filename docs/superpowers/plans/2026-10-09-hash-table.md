@@ -22,14 +22,23 @@
 - Empty buckets and empty tables render accessibly.
 
 ### Task 1: Domain
-- [ ] Write failing model, hash function, and operation tests.
-- [ ] Add strict validation, deterministic bucket hashing, and reversible set/remove.
-- [ ] Add history field schemas and verify replay.
+- [x] Write failing model, hash function, and operation tests.
+- [x] Add strict validation, deterministic bucket hashing, and reversible set/remove.
+- [x] Add history field schemas and verify replay.
 
 ### Task 2: UI
-- [ ] Add toolbar, SVG buckets, and key/value controls.
-- [ ] Test collisions, updating, removal, persistence, undo/redo.
+- [x] Add toolbar, SVG buckets, and key/value controls.
+- [x] Test collisions, updating, persistence, and undo/redo.
 
 ### Task 3: Verification
-- [ ] Update README and completion record.
+- [x] Update README and completion record.
 - [ ] Run full suite, build, diff check, and commit.
+
+## Completion record
+
+- Added a validated hash-table object with unique keys, seven configurable buckets, deterministic Unicode code-point hashing, and separate chaining.
+- Added reversible key insertion, update, removal, and exact entry restoration in timeline history.
+- Added visible bucket rows, collision rendering, inspector writes/removals, and app coverage for colliding keys and undo/redo.
+- Verification: full suite passed (147 tests across 17 files), production build passed, and `git diff --check` passed.
+
+- [x] Run full suite, build, diff check, and commit.

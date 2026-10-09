@@ -14,6 +14,7 @@ import type {
   LinkedListObject,
   GraphObject,
   BinaryTreeObject,
+  HashTableObject,
 } from './model'
 import type { Result } from './result'
 
@@ -180,6 +181,13 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
         && value.highlightedNodeIds.every((id) => typeof id === 'string' && ids.includes(id))
         && new Set(value.highlightedNodeIds).size === value.highlightedNodeIds.length
     }
+    case 'hash-table': {
+      if (!Number.isInteger(value.bucketCount) || Number(value.bucketCount) < 3 || Number(value.bucketCount) > 13 || !Array.isArray(value.entries) || value.entries.length > 50) return false
+      if (!value.entries.every((entry) => isRecord(entry) && hasOnlyFields(entry, ['key', 'value'])
+        && typeof entry.key === 'string' && entry.key.trim().length > 0
+        && (typeof entry.value === 'string' || isFiniteNumber(entry.value)))) return false
+      return new Set(value.entries.map((entry) => (entry as Record<string, unknown>).key)).size === value.entries.length
+    }
   }
 }
 
@@ -262,6 +270,11 @@ export const objectRegistry: ObjectRegistry = {
     type: 'binary-tree',
     typeVersion: 1,
     validate: (value) => validateObject<BinaryTreeObject>(value, 'binary-tree', ['rootId', 'nodes', 'highlightedNodeIds']),
+  },
+  'hash-table': {
+    type: 'hash-table',
+    typeVersion: 1,
+    validate: (value) => validateObject<HashTableObject>(value, 'hash-table', ['bucketCount', 'entries']),
   },
 }
 

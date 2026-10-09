@@ -136,6 +136,10 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .tree-node text { fill: var(--ink); font-size: 13px; font-weight: 800; pointer-events: none; }
 .tree-node-highlighted circle { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 4; }
 .tree-empty { fill: var(--ink-soft); font-size: 10px; font-weight: 700; }
+.hash-table-title { fill: var(--ink-soft); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.hash-bucket rect { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.hash-bucket-index { fill: var(--accent-strong); font-size: 11px; font-weight: 800; }
+.hash-bucket-entries { fill: var(--ink); font-size: 11px; font-weight: 650; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }
