@@ -152,6 +152,11 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .trie-node text { fill: var(--ink); font-size: 11px; font-weight: 800; pointer-events: none; }
 .trie-terminal circle:first-child { fill: var(--accent-soft); stroke: var(--accent-strong); stroke-width: 2.5; }
 .trie-node .trie-terminal-mark { fill: var(--accent-strong); stroke: none; }
+.lesson-picker { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.lesson-step-header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; }
+.lesson-step-header span { color: var(--ink-soft); font-size: 0.7rem; }
+.lesson-picker p { margin: 0; color: var(--ink-soft); font-size: 0.75rem; line-height: 1.4; }
+.lesson-step-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .pointer-mark path { fill: none; stroke: var(--pointer); stroke-width: 2.5; marker-end: url(#pointer-arrow); }
 marker#pointer-arrow path { fill: var(--pointer); stroke: none; }
 .pointer-mark text, .range-mark text { fill: var(--pointer); font-size: 14px; font-weight: 750; }

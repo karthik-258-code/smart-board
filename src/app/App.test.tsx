@@ -162,6 +162,19 @@ describe('Smart Board app shell', () => {
     expect(savedBoard().objects[0].words).toEqual(['car', 'cat'])
   })
 
+  it('sequences a graph-search lesson and loads its selected step', async () => {
+    render(<App />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Guided lesson' }), { target: { value: 'graph-search' } })
+    expect(screen.getByText('Visit the nearest unvisited vertices before moving deeper.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Load lesson step' }))
+    expect(screen.getByRole('button', { name: /Graph: 4 vertices/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Next lesson step' }))
+    expect(screen.getByText('Lesson 2 of 2')).toBeInTheDocument()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Load lesson step' }))
+    await waitFor(() => expect(savedBoard().id).toBe('depth-first-search'))
+  })
+
   it('adds a DP table, edits and highlights cells, links dependencies, and saves it', () => {
     const view = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add DP table' }))

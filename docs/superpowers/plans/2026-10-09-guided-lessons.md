@@ -21,12 +21,21 @@
 - Cancelled example replacement preserves selected lesson step and board.
 
 ### Task 1: Lesson metadata
-- [ ] Add three ordered lessons and catalog validation tests.
+- [x] Add three ordered lessons and catalog validation tests.
 
 ### Task 2: Lesson panel
-- [ ] Add accessible picker, objective, navigation, and load action.
-- [ ] Test graph lesson loading and navigation.
+- [x] Add accessible picker, objective, navigation, and load action.
+- [x] Test graph lesson loading and navigation.
 
 ### Task 3: Verification
-- [ ] Update README and completion record.
+- [x] Update README and completion record.
 - [ ] Run full suite, build, diff check, and commit.
+
+## Completion record
+
+- Added three ordered guided lessons: array foundations, windows/DP, and graph search.
+- Each step links to a validated replayable example and includes a concrete objective.
+- Added accessible lesson selection, progress, previous/next navigation, and explicit load action through existing replacement confirmation.
+- Verification: full suite passed (163 tests across 20 files), production build passed, and `git diff --check` passed.
+
+- [x] Run full suite, build, diff check, and commit.

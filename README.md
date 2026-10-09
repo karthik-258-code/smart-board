@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, and queues are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -42,6 +42,7 @@ The current app supports a manually authored board with:
 - Min/max heaps with array and tree views, validated ordering, push, extract-top, and reversible history.
 - Tries with shared-prefix node rendering and reversible lowercase word insertion/removal.
 - Replayable examples for array traversal, binary search, sliding window, Fibonacci DP, breadth-first search, and depth-first search.
+- Guided lesson sequences for array foundations, windows and dynamic programming, and graph search, with objectives and lesson-step navigation.
 - Local browser saving restores the full timeline, including undo/redo branches and the current cursor. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
@@ -287,7 +288,7 @@ Represent changes as reversible steps and provide controls to run, pause, step, 
 
 ### Phase 4: Expand structures and examples
 
-Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, linked lists, editable graphs, binary trees, min/max heaps, hash tables, tries, and six replayable examples are implemented. Remaining work: lesson sequencing.
+Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, linked lists, editable graphs, binary trees, min/max heaps, hash tables, tries, six replayable examples, and three guided lessons are implemented.
 
 ### Phase 5: Connect supported code
 
@@ -299,7 +300,7 @@ Local save/restore and manual JSON file sharing preserve full timelines. Cloud l
 
 ## Current status
 
-The implemented features above are present in the app and covered by tests. Remaining work includes additional data structures, lesson sequencing and prepared examples, code execution and variable synchronization, collaboration, and cloud sharing.
+The implemented features above are present in the app and covered by tests. Remaining product milestones are a supported code execution/variable synchronization workflow, collaboration, and cloud sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

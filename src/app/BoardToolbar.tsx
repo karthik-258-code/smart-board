@@ -1,5 +1,6 @@
 import type { ArrayObject } from '../domain/model'
 import { ExamplePicker } from './ExamplePicker'
+import { LessonPicker } from './LessonPicker'
 
 export type BoardTool = 'note' | 'shape' | 'array' | 'empty-array' | 'table' | 'checkpoint' | 'stack' | 'queue' | 'linked-list' | 'graph' | 'binary-tree' | 'hash-table' | 'heap' | 'trie' | 'pointer' | 'range'
 
@@ -7,6 +8,7 @@ export function BoardToolbar({ onAdd, selectedArray, drawingMode, onToggleDrawin
   return (
     <nav className="board-toolbar" aria-label="Board tools">
       <ExamplePicker onLoad={onLoadExample} />
+      <LessonPicker onLoad={onLoadExample} />
       <div className="toolbar-divider" />
       <p>Place on board</p>
       <button type="button" onClick={() => onAdd('note')}>Add note</button>
