@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from './model'
 import { dispatch, redo, stateAt, undo, validateHistory, type HistoryState } from './history'
-import { inorderTraversalTemplate } from '../execution/smartScript'
+import { heapExtractionTemplate, inorderTraversalTemplate } from '../execution/smartScript'
 
 const initial = createEmptyBoard('board-1')
 const add = (id: string, text: string) => ({
@@ -109,6 +109,16 @@ describe('history', () => {
     const numericState = dispatchOrThrow(state, { type: 'tree/set-highlighted', objectId: 'tree', nodeIds: ['left'] })
     const numericExecution = { ...numericState, execution: { kind: 'smart-script' as const, source: inorderTraversalTemplate, arrayId: 'tree', events: [{ cursor: 3, line: 4, variables: { visitedCount: 1 }, inspection: { index: 1, value: 8 } }] } }
     expect(validateHistory(numericExecution)).toMatchObject({ ok: true, value: { execution: { events: [{ inspection: { index: 1, value: 8 } }] } } })
+  })
+
+  it('validates heap extraction inspections against the pre-extraction heap state', () => {
+    let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
+    state = dispatchOrThrow(state, { type: 'object/add', object: { id: 'heap', type: 'heap', typeVersion: 1, position: { x: 0, y: 0 }, kind: 'min', values: [1, 3, 2] } })
+    state = dispatchOrThrow(state, { type: 'heap/extract-top', objectId: 'heap' })
+    state = { ...state, execution: { kind: 'smart-script', source: heapExtractionTemplate, arrayId: 'heap', events: [{ cursor: 2, line: 2, variables: { extractedValue: 1, heapSize: 2 }, inspection: { index: 0, value: 1 } }] } }
+
+    expect(validateHistory(state)).toEqual({ ok: true, value: state })
+    expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 2, variables: { extractedValue: 3, heapSize: 2 }, inspection: { index: 0, value: 3 } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
   })
 
   it('rejects execution metadata outside the saved timeline', () => {

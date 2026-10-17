@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { SmartScriptPanel } from './SmartScriptPanel'
+import { heapExtractionTemplate } from '../execution/smartScript'
 import { levelOrderTraversalTemplate } from '../execution/smartScript'
-import type { ArrayObject, BinaryTreeObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
+import type { ArrayObject, BinaryTreeObject, ContainerObject, GraphObject, HeapObject, LinkedListObject } from '../domain/model'
 
 const arrays: ArrayObject[] = [
   { id: 'array-one', type: 'array', typeVersion: 1, position: { x: 0, y: 0 }, values: [1], highlightedIndices: [] },
@@ -21,6 +22,9 @@ const trees: BinaryTreeObject[] = [
   { id: 'tree-one', type: 'binary-tree', typeVersion: 1, position: { x: 0, y: 500 }, rootId: 'root', highlightedNodeIds: [], nodes: [
     { id: 'root', value: 7, leftId: null, rightId: null, position: { x: 0, y: 0 } },
   ] },
+]
+const heaps: HeapObject[] = [
+  { id: 'heap-one', type: 'heap', typeVersion: 1, position: { x: 0, y: 600 }, kind: 'min', values: [1] },
 ]
 
 describe('Smart Script panel', () => {
@@ -92,6 +96,17 @@ describe('Smart Script panel', () => {
 
     expect(screen.getByText('Safe subset · binary-tree level-order traversal')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(levelOrderTraversalTemplate)
+  })
+
+  it('selects a heap and loads the extraction template', () => {
+    render(<SmartScriptPanel arrays={arrays} containers={containers} linkedLists={linkedLists} graphs={graphs} trees={trees} heaps={heaps} cursor={0} execution={null} onRun={vi.fn()} />)
+    const target = screen.getByRole('combobox', { name: 'Structure to visualize' })
+    fireEvent.change(target, { target: { value: 'heap-one' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use heap extraction template' }))
+
+    expect(target).toHaveValue('heap-one')
+    expect(screen.getByText('Safe subset · heap extraction')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(heapExtractionTemplate)
   })
 
   it('loads graph depth-first template for a graph target', () => {

@@ -1,6 +1,6 @@
 import type { HistoryState } from '../domain/history'
 import { dispatch, stateAt } from '../domain/history'
-import type { ArrayObject, BinaryTreeObject, BoardObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
+import type { ArrayObject, BinaryTreeObject, BoardObject, ContainerObject, GraphObject, HeapObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
@@ -28,6 +28,12 @@ export const binarySearchTemplate = [
   '  } else {',
   '    high = mid - 1;',
   '  }',
+  '}',
+].join('\n')
+
+export const heapExtractionTemplate = [
+  'while (heap.values.length > 0) {',
+  '  extractTop();',
   '}',
 ].join('\n')
 
@@ -843,7 +849,46 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
   return { ok: true, value: { history: nextHistory, events, arrayName: 'tree', indexName: 'node' } }
 }
 
+export function runHeapExtraction(source: string, history: HistoryState, heapObjectId: string): Result<SmartScriptRun, SmartScriptError> {
+  if (source.length > HARD_SOURCE_LENGTH_LIMIT) return fail('step_limit', `Source cannot exceed ${HARD_SOURCE_LENGTH_LIMIT} characters.`, 1)
+  const expectedLines = heapExtractionTemplate.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
+  const sourceLines = source.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
+  const mismatch = expectedLines.findIndex((line, index) => line !== sourceLines[index])
+  if (mismatch !== -1 || sourceLines.length !== expectedLines.length) {
+    const mismatchLine = mismatch >= 0 ? mismatch + 1 : sourceLines.length > expectedLines.length ? expectedLines.length + 1 : 1
+    return fail('unsupported_syntax', 'Use the unchanged heap extraction template.', mismatchLine)
+  }
+  const current = stateAt(history, history.cursor)
+  if (!current.ok) return fail('invalid_history', current.error.message, 1)
+  const heap = current.value.objects.find((object): object is HeapObject => object.id === heapObjectId && object.type === 'heap')
+  if (!heap) return fail('missing_array', 'Select a min or max heap before running this script.', 1)
+
+  let nextHistory = history
+  const events: SmartScriptEvent[] = []
+  while (true) {
+    const state = stateAt(nextHistory, nextHistory.cursor)
+    if (!state.ok) return fail('invalid_history', state.error.message, 1)
+    const currentHeap = state.value.objects.find((object): object is HeapObject => object.id === heapObjectId && object.type === 'heap')
+    if (!currentHeap) return fail('invalid_history', 'The heap changed while the script was running.', 2)
+    if (currentHeap.values.length === 0) break
+    if (events.length >= HARD_EVENT_LIMIT) return fail('step_limit', `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, 2)
+    const extractedValue = currentHeap.values[0]
+    const operation: BoardOperation = { type: 'heap/extract-top', objectId: currentHeap.id }
+    const changed = dispatch(nextHistory, operation)
+    if (!changed.ok) return fail('invalid_history', changed.error.message, 2)
+    nextHistory = changed.value
+    events.push({
+      line: 2,
+      variables: { extractedValue, heapSize: currentHeap.values.length - 1 },
+      inspection: { index: 0, value: extractedValue },
+      operation,
+    })
+  }
+  return { ok: true, value: { history: nextHistory, events, arrayName: 'heap', indexName: 'top' } }
+}
+
 export function runSmartScript(source: string, history: HistoryState, arrayObjectId: string): Result<SmartScriptRun, SmartScriptError> {
+  if (/^\s*while\s*\(\s*heap\.values\.length/.test(source)) return runHeapExtraction(source, history, arrayObjectId)
   if (/^\s*let\s+target\s*=/.test(source)) return runBinarySearch(source, history, arrayObjectId)
   if (/^\s*let\s+start\s*=\s*["']/.test(source)) return /^\s*let\s+stack\s*=/m.test(source)
     ? runGraphDepthFirstSearch(source, history, arrayObjectId)

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Smart Script is the first executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, queue, linked-list, and graph traversal patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
+Smart Script is the executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, queue, linked-list, graph, binary-tree, and heap patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
 
 ## Supported source
 
@@ -133,6 +133,18 @@ levelOrder(tree.root);
 
 Only the four built-in templates run. Each visit creates one reversible tree highlight operation and one snapshot with the node's saved tree index, value, and `visitedCount`; level-order snapshots also expose `queueLength` immediately after dequeue. Child links determine traversal order; empty trees complete with no events. Source is validated and never evaluated as JavaScript.
 
+### Heap extraction
+
+The panel can run this fixed template against a min or max heap:
+
+```ts
+while (heap.values.length > 0) {
+  extractTop();
+}
+```
+
+Each call uses the existing reversible heap extraction operation. The event snapshot records `extractedValue` and the remaining `heapSize`, while inspection records the top value before extraction. Min heaps extract in ascending order; max heaps extract in descending order. Empty heaps complete with no events. The full trace, including pre-extraction inspection values, is validated against each operation's inverse and survives local save/reload.
+
 ## Execution and history
 
 The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; traversal events also record the inspected index and value, and the editor displays these at the current history cursor. The binary-search template exposes its inspected value, index, and comparison through its variable snapshot. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
@@ -141,4 +153,4 @@ The source is limited to 10,000 characters, arithmetic expressions to 256 tokens
 
 ## Explicit limits
 
-The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions beyond the four fixed tree templates, input/output, asynchronous code, or traversal of heaps, hash tables, and tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search, graph BFS/DFS, and tree traversal control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph search reports visit count, its remaining queue or stack size, and current node. Tree traversal reports visit count and current node, plus queue length for level-order traversal. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions beyond the fixed tree templates, input/output, asynchronous code, or traversal of hash tables and tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search, heap extraction, graph BFS/DFS, and tree traversal control flow are fixed to templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph search reports visit count, its remaining queue or stack size, and current node. Tree traversal reports visit count and current node, plus queue length for level-order traversal. Heap extraction reports each extracted value and remaining heap size. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.

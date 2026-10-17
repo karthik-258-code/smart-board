@@ -294,6 +294,31 @@ describe('Smart Board app shell', () => {
     expect(heap.querySelector('.heap-top')).toHaveTextContent('3')
   })
 
+  it('runs and restores a min-heap extraction Smart Script trace', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add heap' }))
+    const heapId = savedBoard().objects.find((object: BoardObject) => object.type === 'heap')?.id
+    for (const value of [3, 9, 5]) {
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'Heap value' }), { target: { value: String(value) } })
+      fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    }
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: heapId } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use heap extraction template' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('Safe subset · heap extraction')).toBeInTheDocument()
+    expect(screen.getByText('extractedValue = 9')).toBeInTheDocument()
+    expect(screen.getByText('heapSize = 0')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 0 · value 9')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.execution).toMatchObject({ arrayId: heapId })
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(heapId)
+    expect(screen.getByText('Safe subset · heap extraction')).toBeInTheDocument()
+    expect(screen.getByText('extractedValue = 9')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 0 · value 9')).toBeInTheDocument()
+  })
+
   it('shares trie prefixes and persists word edits', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add trie' }))

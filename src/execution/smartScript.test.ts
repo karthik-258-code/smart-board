@@ -520,3 +520,41 @@ describe('Smart Script binary-tree traversal', () => {
     expect(runSmartScript(levelOrderTemplate, treeHistory(), 'tree-board').ok).toBe(true)
   })
 })
+
+describe('Smart Script heap extraction', () => {
+  const extractionTemplate = 'while (heap.values.length > 0) {\n  extractTop();\n}'
+
+  function heapHistory(kind: 'min' | 'max', values: number[]): HistoryState {
+    const result = dispatch({ initialDocument: createEmptyBoard('heap-script-test'), entries: [], cursor: 0 }, { type: 'object/add', object: {
+      id: 'heap-board', type: 'heap', typeVersion: 1, position: { x: 0, y: 0 }, kind, values,
+    } })
+    if (!result.ok) throw new Error(result.error.message)
+    return result.value
+  }
+
+  it.each([
+    ['min' as const, [1, 3, 2, 7], [1, 2, 3, 7]],
+    ['max' as const, [9, 6, 8, 2], [9, 8, 6, 2]],
+  ])('extracts a %s heap in priority order with reversible snapshots', (kind, values, expected) => {
+    const initial = heapHistory(kind, values)
+    const result = runSmartScript(extractionTemplate, initial, 'heap-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(expected)
+    expect(result.value.events.map((event) => event.variables)).toEqual(expected.map((value, index) => ({ extractedValue: value, heapSize: expected.length - index - 1 })))
+    expect(result.value.events.every((event) => event.operation.type === 'heap/extract-top')).toBe(true)
+    expect(stateAt(result.value.history, result.value.history.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ values: [] })] } })
+    const oneUndo = undo(result.value.history)
+    const restored = stateAt(oneUndo, oneUndo.cursor)
+    expect(restored).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ values: [expected.at(-1)] })] } })
+    const oneRedo = redo(oneUndo)
+    expect(stateAt(oneRedo, oneRedo.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ values: [] })] } })
+  })
+
+  it('completes on an empty heap and rejects edited templates', () => {
+    const initial = heapHistory('min', [])
+    expect(runSmartScript(extractionTemplate, initial, 'heap-board')).toMatchObject({ ok: true, value: { events: [] } })
+    expect(runSmartScript(extractionTemplate.replace('extractTop()', 'unsafe()'), heapHistory('min', [1]), 'heap-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 2 } })
+  })
+})
