@@ -105,7 +105,7 @@ The panel also provides a fixed iterative depth-first search template. It uses a
 
 ### Binary-tree depth-first traversal
 
-The panel provides fixed preorder, inorder, and postorder templates for binary trees:
+The panel provides fixed preorder, inorder, postorder, and level-order templates for binary trees. Level-order traversal uses a FIFO queue and visits each level from left to right:
 
 ```ts
 function inorder(node) {
@@ -117,7 +117,21 @@ function inorder(node) {
 inorder(tree.root);
 ```
 
-Only the three built-in templates run. Each visit creates one reversible tree highlight operation and one snapshot with the node's saved tree index, value, and `visitedCount`. Child links determine traversal order; empty trees complete with no events. Source is validated and never evaluated as JavaScript.
+```ts
+function levelOrder(node) {
+  if (node === null) return;
+  let queue = [node];
+  while (queue.length > 0) {
+    let current = queue.shift();
+    highlight(current);
+    if (current.left !== null) queue.push(current.left);
+    if (current.right !== null) queue.push(current.right);
+  }
+}
+levelOrder(tree.root);
+```
+
+Only the four built-in templates run. Each visit creates one reversible tree highlight operation and one snapshot with the node's saved tree index, value, and `visitedCount`; level-order snapshots also expose `queueLength` immediately after dequeue. Child links determine traversal order; empty trees complete with no events. Source is validated and never evaluated as JavaScript.
 
 ## Execution and history
 
@@ -127,4 +141,4 @@ The source is limited to 10,000 characters, arithmetic expressions to 256 tokens
 
 ## Explicit limits
 
-The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions beyond the three fixed tree templates, input/output, asynchronous code, or traversal of heaps, hash tables, and tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search, graph BFS/DFS, and tree traversal control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph search reports visit count, its remaining queue or stack size, and current node. Tree traversal reports visit count and current node. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions beyond the four fixed tree templates, input/output, asynchronous code, or traversal of heaps, hash tables, and tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search, graph BFS/DFS, and tree traversal control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph search reports visit count, its remaining queue or stack size, and current node. Tree traversal reports visit count and current node, plus queue length for level-order traversal. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.

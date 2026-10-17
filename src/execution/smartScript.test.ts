@@ -441,6 +441,20 @@ describe('Smart Script graph breadth-first search', () => {
 })
 
 describe('Smart Script binary-tree traversal', () => {
+  const levelOrderTemplate = [
+    'function levelOrder(node) {',
+    '  if (node === null) return;',
+    '  let queue = [node];',
+    '  while (queue.length > 0) {',
+    '    let current = queue.shift();',
+    '    highlight(current);',
+    '    if (current.left !== null) queue.push(current.left);',
+    '    if (current.right !== null) queue.push(current.right);',
+    '  }',
+    '}',
+    'levelOrder(tree.root);',
+  ].join('\n')
+
   function treeHistory(): HistoryState {
     const tree = {
       id: 'tree-board', type: 'binary-tree' as const, typeVersion: 1 as const, position: { x: 0, y: 0 }, rootId: 'root', highlightedNodeIds: [],
@@ -475,17 +489,34 @@ describe('Smart Script binary-tree traversal', () => {
     expect(stateAt(restored, restored.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: expectedIds })] } })
   })
 
+  it('visits a binary tree in level order and records the remaining queue size', () => {
+    const result = runTreeTraversal(levelOrderTemplate, treeHistory(), 'tree-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(['M', 8, 'Z', 3])
+    expect(result.value.events.map((event) => event.variables)).toEqual([
+      { visitedCount: 1, queueLength: 0 }, { visitedCount: 2, queueLength: 1 },
+      { visitedCount: 3, queueLength: 1 }, { visitedCount: 4, queueLength: 0 },
+    ])
+    expect(result.value.events.map((event) => event.line)).toEqual([6, 6, 6, 6])
+  })
+
   it('completes on empty tree and rejects edited templates', () => {
     const empty = dispatch({ initialDocument: createEmptyBoard('tree-script-empty'), entries: [], cursor: 0 }, { type: 'object/add', object: {
       id: 'tree-board', type: 'binary-tree', typeVersion: 1, position: { x: 0, y: 0 }, rootId: null, nodes: [], highlightedNodeIds: [],
     } })
     if (!empty.ok) throw new Error(empty.error.message)
     expect(runTreeTraversal(inorderTraversalTemplate, empty.value, 'tree-board')).toMatchObject({ ok: true, value: { events: [] } })
+    expect(runTreeTraversal(levelOrderTemplate, empty.value, 'tree-board')).toMatchObject({ ok: true, value: { events: [] } })
     expect(runTreeTraversal(inorderTraversalTemplate.replace('inorder(node.left)', 'inorder(node.right)'), treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 3 } })
     expect(runTreeTraversal(`${inorderTraversalTemplate}\nunsafe();`, treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 8 } })
+    expect(runTreeTraversal(levelOrderTemplate.replace('queue.push(current.left)', 'queue.push(current.right)'), treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 7 } })
+    expect(runTreeTraversal(`${levelOrderTemplate}\nunsafe();`, treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 12 } })
   })
 
   it('dispatches tree templates through the shared script runner', () => {
     expect(runSmartScript(inorderTraversalTemplate, treeHistory(), 'tree-board').ok).toBe(true)
+    expect(runSmartScript(levelOrderTemplate, treeHistory(), 'tree-board').ok).toBe(true)
   })
 })

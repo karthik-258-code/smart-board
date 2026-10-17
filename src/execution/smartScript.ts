@@ -95,6 +95,20 @@ export const postorderTraversalTemplate = [
   'postorder(tree.root);',
 ].join('\n')
 
+export const levelOrderTraversalTemplate = [
+  'function levelOrder(node) {',
+  '  if (node === null) return;',
+  '  let queue = [node];',
+  '  while (queue.length > 0) {',
+  '    let current = queue.shift();',
+  '    highlight(current);',
+  '    if (current.left !== null) queue.push(current.left);',
+  '    if (current.right !== null) queue.push(current.right);',
+  '  }',
+  '}',
+  'levelOrder(tree.root);',
+].join('\n')
+
 function fail(code: SmartScriptError['code'], message: string, line: number): Result<never, SmartScriptError> {
   return { ok: false, error: { code, message, line } }
 }
@@ -746,6 +760,7 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
     { source: preorderTraversalTemplate, order: 'preorder' as const, visitLine: 3 },
     { source: inorderTraversalTemplate, order: 'inorder' as const, visitLine: 4 },
     { source: postorderTraversalTemplate, order: 'postorder' as const, visitLine: 5 },
+    { source: levelOrderTraversalTemplate, order: 'level-order' as const, visitLine: 6 },
   ]
   const normalizeTemplate = (value: string) => value.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).join('\n')
   const normalized = normalizeTemplate(source)
@@ -756,7 +771,7 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
     const expectedLines = candidate ? normalizeTemplate(candidate.source).split('\n') : []
     const mismatch = expectedLines.findIndex((line, index) => line !== sourceLines[index])
     const mismatchLine = mismatch >= 0 ? mismatch + 1 : sourceLines.length > expectedLines.length ? expectedLines.length + 1 : 1
-    return fail('unsupported_syntax', 'Use an unchanged preorder, inorder, or postorder template.', mismatchLine)
+    return fail('unsupported_syntax', 'Use an unchanged preorder, inorder, postorder, or level-order template.', mismatchLine)
   }
   const traversal = selected
 
@@ -792,7 +807,7 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
     }
     return null
   }
-  function record(nodeId: string): SmartScriptError | null {
+  function record(nodeId: string, extraVariables: Record<string, number> = {}): SmartScriptError | null {
     const node = nodesById.get(nodeId)
     if (!node) return { code: 'invalid_history', message: 'The tree changed while the script was running.', line: traversal.visitLine }
     if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line: traversal.visitLine }
@@ -803,13 +818,27 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
     nextHistory = changed.value
     events.push({
       line: traversal.visitLine,
-      variables: { visitedCount: visited.length },
+      variables: { visitedCount: visited.length, ...extraVariables },
       inspection: { index: targetTree.nodes.findIndex((candidate) => candidate.id === nodeId), value: node.value },
       operation,
     })
     return null
   }
-  const traversalError = visit(targetTree.rootId)
+  let traversalError: SmartScriptError | null = null
+  if (traversal.order === 'level-order') {
+    const queue = targetTree.rootId ? [targetTree.rootId] : []
+    while (queue.length > 0) {
+      const nodeId = queue.shift()!
+      const node = nodesById.get(nodeId)
+      if (!node) return fail('invalid_history', 'The tree changed while the script was running.', traversal.visitLine)
+      traversalError = record(nodeId, { queueLength: queue.length })
+      if (traversalError) break
+      if (node.leftId) queue.push(node.leftId)
+      if (node.rightId) queue.push(node.rightId)
+    }
+  } else {
+    traversalError = visit(targetTree.rootId)
+  }
   if (traversalError) return { ok: false, error: traversalError }
   return { ok: true, value: { history: nextHistory, events, arrayName: 'tree', indexName: 'node' } }
 }
@@ -819,6 +848,6 @@ export function runSmartScript(source: string, history: HistoryState, arrayObjec
   if (/^\s*let\s+start\s*=\s*["']/.test(source)) return /^\s*let\s+stack\s*=/m.test(source)
     ? runGraphDepthFirstSearch(source, history, arrayObjectId)
     : runGraphBreadthFirstSearch(source, history, arrayObjectId)
-  if (/^\s*function\s+(preorder|inorder|postorder)\s*\(/.test(source)) return runTreeTraversal(source, history, arrayObjectId)
+  if (/^\s*function\s+(preorder|inorder|postorder|levelOrder)\s*\(/.test(source)) return runTreeTraversal(source, history, arrayObjectId)
   return runArrayTraversal(source, history, arrayObjectId)
 }

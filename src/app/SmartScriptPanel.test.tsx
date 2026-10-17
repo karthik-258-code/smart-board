@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { SmartScriptPanel } from './SmartScriptPanel'
+import { levelOrderTraversalTemplate } from '../execution/smartScript'
 import type { ArrayObject, BinaryTreeObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
 
 const arrays: ArrayObject[] = [
@@ -82,6 +83,15 @@ describe('Smart Script panel', () => {
     expect(target).toHaveValue('tree-one')
     expect(screen.getByText('Safe subset · binary-tree inorder traversal')).toBeInTheDocument()
     expect((screen.getByRole('textbox', { name: 'Smart Script source' }) as HTMLTextAreaElement).value).toContain('inorder(tree.root)')
+  })
+
+  it('selects the binary-tree level-order template and labels its mode', () => {
+    render(<SmartScriptPanel arrays={arrays} containers={containers} linkedLists={linkedLists} graphs={graphs} trees={trees} cursor={0} execution={null} onRun={vi.fn()} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: 'tree-one' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use level-order traversal template' }))
+
+    expect(screen.getByText('Safe subset · binary-tree level-order traversal')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(levelOrderTraversalTemplate)
   })
 
   it('loads graph depth-first template for a graph target', () => {

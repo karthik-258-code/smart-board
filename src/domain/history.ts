@@ -65,7 +65,7 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
   if (!target) return invalidHistory('Saved script execution must map to an array, stack, queue, linked list, graph, or binary tree in the board.')
   if (/^\s*let\s+target\s*=/.test(value.source) && target.type !== 'array') return invalidHistory('Binary-search execution must map to an array.')
   if (/^\s*let\s+start\s*=\s*["']/.test(value.source) ? target.type !== 'graph' : target.type === 'graph') return invalidHistory('Graph breadth-first execution must map to a graph.')
-  if (/^\s*function\s+(preorder|inorder|postorder)\s*\(/.test(value.source) ? target.type !== 'binary-tree' : target.type === 'binary-tree') return invalidHistory('Binary-tree traversal execution must map to a binary tree.')
+  if (/^\s*function\s+(preorder|inorder|postorder|levelOrder)\s*\(/.test(value.source) ? target.type !== 'binary-tree' : target.type === 'binary-tree') return invalidHistory('Binary-tree traversal execution must map to a binary tree.')
   const lines = value.source.replace(/\r\n?/g, '\n').split('\n').length
   let previousCursor = 0
   const events: SavedExecutionEvent[] = []
