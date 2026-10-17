@@ -489,6 +489,25 @@ describe('Smart Board app shell', () => {
     expect(screen.getByText('Inspecting index 6 · value 14')).toBeInTheDocument()
   })
 
+  it('runs and restores a graph depth-first Smart Script trace', () => {
+    const view = render(<App />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'breadth-first-search' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load example' }))
+    const graphId = savedBoard().objects.find((object: BoardObject) => object.type === 'graph')?.id
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: graphId } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use depth-first search template' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('visitedCount = 4')).toBeInTheDocument()
+    expect(screen.getByText('stackLength = 1')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 1 · value B')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.execution).toMatchObject({ arrayId: graphId })
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(graphId)
+    expect(screen.getByText('Safe subset · graph depth-first search')).toBeInTheDocument()
+  })
+
   it('loads a replayable algorithm example and persists its history', () => {
     render(<App />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'array-traversal' } })

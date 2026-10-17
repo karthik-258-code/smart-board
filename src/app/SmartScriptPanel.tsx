@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ArrayObject, BinaryTreeObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
-import { binarySearchTemplate, breadthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate } from '../execution/smartScript'
+import { binarySearchTemplate, breadthFirstSearchTemplate, depthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate } from '../execution/smartScript'
 
 export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number>; inspection?: { index: number; value: string | number } }> }
 
@@ -42,6 +42,7 @@ export function SmartScriptPanel({
   const traceSource = execution?.source ?? source
   const binarySearchMode = /^\s*let\s+target\s*=/.test(traceSource)
   const graphTraversalMode = /^\s*let\s+start\s*=\s*["']/.test(traceSource)
+  const graphDepthFirstMode = graphTraversalMode && /^\s*let\s+stack\s*=/m.test(traceSource)
   const treeTraversalMode = /^\s*function\s+(preorder|inorder|postorder)\s*\(/.test(traceSource)
   const selectedTreeOrder = treeTraversalMode ? /function\s+(preorder|inorder|postorder)\s*\(/.exec(traceSource)?.[1] : null
   const lines = traceSource.split('\n')
@@ -49,7 +50,7 @@ export function SmartScriptPanel({
 
   return <section className="code-trace-panel smart-script-panel" role="region" aria-label="Smart Script runner">
     <div className="code-trace-heading">
-      <div><h2>Smart Script</h2><span>Safe subset · {binarySearchMode ? 'binary search' : graphTraversalMode ? 'graph breadth-first search' : treeTraversalMode ? `binary-tree ${selectedTreeOrder} traversal` : selectedGraph ? 'graph traversal' : selectedContainer ? `${selectedContainer.kind} traversal` : selectedLinkedList ? 'linked list traversal' : 'array traversal'}</span></div>
+      <div><h2>Smart Script</h2><span>Safe subset · {binarySearchMode ? 'binary search' : graphTraversalMode ? `graph ${graphDepthFirstMode ? 'depth-first' : 'breadth-first'} search` : treeTraversalMode ? `binary-tree ${selectedTreeOrder} traversal` : selectedGraph ? 'graph traversal' : selectedContainer ? `${selectedContainer.kind} traversal` : selectedLinkedList ? 'linked list traversal' : 'array traversal'}</span></div>
       <span className="code-trace-status">{status}</span>
     </div>
     <div className="smart-script-controls">
@@ -66,6 +67,7 @@ export function SmartScriptPanel({
       </label>
       <button type="button" className="template-control" disabled={Boolean(selectedContainer || selectedLinkedList || selectedGraph || selectedTree)} onClick={() => setSource(binarySearchTemplate)}>Use binary search template</button>
       <button type="button" className="template-control" disabled={!selectedGraph} onClick={() => setSource(breadthFirstSearchTemplate)}>Use breadth-first search template</button>
+      <button type="button" className="template-control" disabled={!selectedGraph} onClick={() => setSource(depthFirstSearchTemplate)}>Use depth-first search template</button>
       <button type="button" className="template-control" disabled={!selectedTree} onClick={() => setSource(preorderTraversalTemplate)}>Use preorder traversal template</button>
       <button type="button" className="template-control" disabled={!selectedTree} onClick={() => setSource(inorderTraversalTemplate)}>Use inorder traversal template</button>
       <button type="button" className="template-control" disabled={!selectedTree} onClick={() => setSource(postorderTraversalTemplate)}>Use postorder traversal template</button>
@@ -83,6 +85,6 @@ export function SmartScriptPanel({
       {currentEvent ? Object.entries(currentEvent.variables).map(([name, value]) => <code key={name}>{name} = {value}</code>) : <span>No runtime snapshot at this step</span>}
       {currentEvent?.inspection && <code>Inspecting index {currentEvent.inspection.index} · value {currentEvent.inspection.value}</code>}
     </div>
-    <p className="smart-script-help">Supported: array, stack, queue, and linked-list traversal with numeric accumulators, arithmetic expressions, compound <code>&amp;&amp;</code> / <code>||</code> conditions, nested <code>if/else</code>, <code>break</code>, and <code>continue</code>; binary search for arrays; breadth-first graph search; or preorder, inorder, and postorder tree traversal. Other code is rejected; scripts are never evaluated as JavaScript.</p>
+    <p className="smart-script-help">Supported: array, stack, queue, and linked-list traversal with numeric accumulators, arithmetic expressions, compound <code>&amp;&amp;</code> / <code>||</code> conditions, nested <code>if/else</code>, <code>break</code>, and <code>continue</code>; binary search for arrays; breadth-first or depth-first graph search; or preorder, inorder, and postorder tree traversal. Other code is rejected; scripts are never evaluated as JavaScript.</p>
   </section>
 }

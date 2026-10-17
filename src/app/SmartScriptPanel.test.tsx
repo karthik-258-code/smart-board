@@ -83,4 +83,13 @@ describe('Smart Script panel', () => {
     expect(screen.getByText('Safe subset · binary-tree inorder traversal')).toBeInTheDocument()
     expect((screen.getByRole('textbox', { name: 'Smart Script source' }) as HTMLTextAreaElement).value).toContain('inorder(tree.root)')
   })
+
+  it('loads graph depth-first template for a graph target', () => {
+    render(<SmartScriptPanel arrays={arrays} containers={containers} linkedLists={linkedLists} graphs={graphs} trees={trees} cursor={0} execution={null} onRun={vi.fn()} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: 'graph-one' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use depth-first search template' }))
+
+    expect(screen.getByText('Safe subset · graph depth-first search')).toBeInTheDocument()
+    expect((screen.getByRole('textbox', { name: 'Smart Script source' }) as HTMLTextAreaElement).value).toContain('stack.pop()')
+  })
 })

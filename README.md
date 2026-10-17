@@ -295,7 +295,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, queue, and linked-list traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus fixed binary-search, graph breadth-first, and binary-tree preorder, inorder, and postorder templates. Traversal snapshots include the inspected index and value alongside script variables. Remaining work: broader variable synchronization and additional structure mappings.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, queue, and linked-list traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus fixed binary-search, graph breadth-first and depth-first, and binary-tree preorder, inorder, and postorder templates. Traversal snapshots include the inspected index and value alongside script variables. Remaining work: broader variable synchronization and additional structure mappings.
 
 ### Phase 6: Persist and share
 

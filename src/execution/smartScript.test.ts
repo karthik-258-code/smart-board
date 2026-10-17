@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from '../domain/model'
 import { dispatch, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import { buildExampleHistory } from '../examples/catalog'
-import { breadthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runSmartScript, runTreeTraversal } from './smartScript'
+import { breadthFirstSearchTemplate, depthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runGraphDepthFirstSearch, runSmartScript, runTreeTraversal } from './smartScript'
 
 function historyWithArray(values: Array<string | number>, withPointer = false) {
   let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
@@ -337,6 +337,39 @@ describe('Smart Script graph breadth-first search', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.events[0]?.inspection?.value).toBe(label)
+  })
+
+  it('visits graph nodes in deterministic LIFO order and reports remaining stack size', () => {
+    const example = buildExampleHistory('breadth-first-search')
+    if (!example.ok) throw new Error(example.error.message)
+    const result = runGraphDepthFirstSearch(depthFirstSearchTemplate, example.value, 'example-graph')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(['A', 'C', 'D', 'B'])
+    expect(result.value.events.map((event) => event.variables.stackLength)).toEqual([0, 1, 1, 1])
+    expect(result.value.events.map((event) => event.line)).toEqual([8, 8, 8, 8])
+  })
+
+  it('handles DFS cycles and disconnected nodes without duplicate visits', () => {
+    const initial = graphHistory(
+      [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }, { id: 'd', label: 'D' }],
+      [{ id: 'ab', from: 'a', to: 'b' }, { id: 'bc', from: 'b', to: 'c' }, { id: 'ca', from: 'c', to: 'a' }],
+    )
+    const result = runGraphDepthFirstSearch(depthFirstSearchTemplate, initial, 'graph-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(['A', 'C', 'B'])
+    expect(result.value.events).toHaveLength(3)
+    expect(stateAt(result.value.history, result.value.history.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: ['a', 'c', 'b'] })] } })
+  })
+
+  it('rejects invalid DFS starts and modified templates, and dispatches valid DFS through shared runner', () => {
+    const initial = graphHistory([{ id: 'a', label: 'A' }], [])
+    expect(runGraphDepthFirstSearch(depthFirstSearchTemplate.replace('stack.pop()', 'stack.shift()'), initial, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
+    expect(runGraphDepthFirstSearch(depthFirstSearchTemplate.replace('"A"', '"Z"'), initial, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 1 } })
+    expect(runSmartScript(depthFirstSearchTemplate, initial, 'graph-board').ok).toBe(true)
   })
 })
 
