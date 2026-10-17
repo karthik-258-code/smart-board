@@ -26,7 +26,7 @@ function labelFor(object: BoardObject): string {
     case 'stroke': return 'Freehand drawing'
     case 'checkpoint': return `Checkpoint: ${object.prompt || 'New practice'}`
     case 'container': return `${object.kind === 'stack' ? 'Stack' : 'Queue'}: ${object.values.join(', ') || 'empty'}${typeof object.currentIndex === 'number' ? `, current item index ${object.currentIndex}` : ''}`
-    case 'linked-list': return `Linked list: ${object.nodes.map((node) => node.value).join(' → ') || 'empty'}`
+    case 'linked-list': return `Linked list: ${object.nodes.map((node) => node.value).join(' → ') || 'empty'}${object.currentNodeId ? `, current node index ${object.nodes.findIndex((node) => node.id === object.currentNodeId)}` : ''}`
     case 'graph': return `Graph: ${object.nodes.length} vertices, ${object.edges.length} edges`
     case 'binary-tree': return `Binary tree: ${object.nodes.length} nodes`
     case 'hash-table': return `Hash table: ${object.entries.length} entries in ${object.bucketCount} buckets`

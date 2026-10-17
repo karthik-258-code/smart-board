@@ -24,6 +24,7 @@ const operationFields: Record<string, string[]> = {
   'container/set-current-index': ['objectId', 'index'], 'container/restore-state': ['objectId', 'values', 'currentIndex'],
   'linked-list/insert': ['objectId', 'afterId', 'nodeId', 'value'], 'linked-list/remove': ['objectId', 'nodeId'],
   'linked-list/reverse': ['objectId'], 'linked-list/restore-nodes': ['objectId', 'nodes'],
+  'linked-list/set-current-node': ['objectId', 'nodeId'], 'linked-list/restore-state': ['objectId', 'nodes', 'currentNodeId'],
   'graph/add-node': ['objectId', 'node'], 'graph/remove-node': ['objectId', 'nodeId'],
   'graph/add-edge': ['objectId', 'edge'], 'graph/remove-edge': ['objectId', 'edgeId'],
   'graph/set-highlighted': ['objectId', 'nodeIds'], 'graph/restore-state': ['objectId', 'nodes', 'edges', 'highlightedNodeIds'],
@@ -60,8 +61,8 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
     || typeof value.source !== 'string' || value.source.length > 10_000 || typeof value.arrayId !== 'string' || !value.arrayId
     || !Array.isArray(value.events) || value.events.length > 5_000) return invalidHistory('Saved script execution metadata is malformed.')
 
-  const target = document.objects.find((object) => object.id === value.arrayId && (object.type === 'array' || object.type === 'container'))
-  if (!target) return invalidHistory('Saved script execution must map to an array, stack, or queue in the board.')
+  const target = document.objects.find((object) => object.id === value.arrayId && (object.type === 'array' || object.type === 'container' || object.type === 'linked-list'))
+  if (!target) return invalidHistory('Saved script execution must map to an array, stack, queue, or linked list in the board.')
   if (/^\s*let\s+target\s*=/.test(value.source) && target.type !== 'array') return invalidHistory('Binary-search execution must map to an array.')
   const lines = value.source.replace(/\r\n?/g, '\n').split('\n').length
   let previousCursor = 0

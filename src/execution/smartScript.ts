@@ -1,6 +1,6 @@
 import type { HistoryState } from '../domain/history'
 import { dispatch, stateAt } from '../domain/history'
-import type { ArrayObject, BoardObject, ContainerObject } from '../domain/model'
+import type { ArrayObject, BoardObject, ContainerObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
@@ -262,12 +262,12 @@ export function runArrayTraversal(
 
   const current = stateAt(history, history.cursor)
   if (!current.ok) return fail('invalid_history', current.error.message, 1)
-  const target = current.value.objects.find((object): object is ArrayObject | ContainerObject =>
-    object.id === arrayObjectId && (object.type === 'array' || object.type === 'container'),
+  const target = current.value.objects.find((object): object is ArrayObject | ContainerObject | LinkedListObject =>
+    object.id === arrayObjectId && (object.type === 'array' || object.type === 'container' || object.type === 'linked-list'),
   )
-  if (!target) return fail('missing_array', 'Select an array, stack, or queue before running this script.', 1)
+  if (!target) return fail('missing_array', 'Select an array, stack, queue, or linked list before running this script.', 1)
   const selectedTarget = target
-  const values = selectedTarget.values
+  const values = selectedTarget.type === 'linked-list' ? selectedTarget.nodes.map((node) => node.value) : selectedTarget.values
 
   const matchingPointers = selectedTarget.type === 'array' ? current.value.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
     object.type === 'pointer' && object.targetObjectId === selectedTarget.id && object.name === indexName,
@@ -281,7 +281,9 @@ export function runArrayTraversal(
     const snapshot = { ...variables }
     const operations: BoardOperation[] = [selectedTarget.type === 'array'
       ? { type: 'array/set-highlight', objectId: selectedTarget.id, indices: [index] }
-      : { type: 'container/set-current-index', objectId: selectedTarget.id, index }]
+      : selectedTarget.type === 'container'
+        ? { type: 'container/set-current-index', objectId: selectedTarget.id, index }
+        : { type: 'linked-list/set-current-node', objectId: selectedTarget.id, nodeId: selectedTarget.nodes[index].id }]
     if (pointer) operations.push({ type: 'pointer/move', objectId: pointer.id, index })
     for (const operation of operations) {
       if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line }

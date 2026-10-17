@@ -17,6 +17,7 @@ describe('linked list validation', () => {
   it('accepts an empty list and a single acyclic chain', () => {
     expect(validateBoard({ ...board, objects: [{ ...list, nodes: [] }] }).ok).toBe(true)
     expect(validateBoard(board).ok).toBe(true)
+    expect(validateBoard({ ...board, objects: [{ ...list, currentNodeId: 'missing' }] }).ok).toBe(false)
   })
 
   it.each(([
@@ -38,6 +39,24 @@ describe('linked list operations', () => {
       { id: 'node-b', value: 8, nextId: null },
     ] }] } } })
     if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document: board } })
+  })
+
+  it('selects a current node with a reversible operation', () => {
+    const result = applyOperation(board, { type: 'linked-list/set-current-node', objectId: 'list-1', nodeId: 'node-b' } as unknown as import('./operations').BoardOperation)
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [{ currentNodeId: 'node-b' }] }, inverse: { type: 'linked-list/set-current-node', objectId: 'list-1' } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document: board } })
+  })
+
+  it('clears a removed current node and restores it on undo', () => {
+    const selectedBoard = { ...board, objects: [{ ...list, currentNodeId: 'node-b' }] }
+    const result = applyOperation(selectedBoard, { type: 'linked-list/remove', objectId: 'list-1', nodeId: 'node-b' })
+
+    expect(result).toMatchObject({ ok: true, value: {
+      document: { objects: [{ nodes: [{ id: 'node-a', nextId: null }], currentNodeId: null }] },
+      inverse: { type: 'linked-list/restore-state', currentNodeId: 'node-b' },
+    } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document: selectedBoard } })
   })
 
   it('removes nodes and reverses the chain with reversible history', () => {

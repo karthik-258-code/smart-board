@@ -133,6 +133,8 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
       const ids = nodes.map((node) => (node as Record<string, unknown>).id as string)
       if (new Set(ids).size !== ids.length) return false
       return nodes.every((node, index) => (node as Record<string, unknown>).nextId === (ids[index + 1] ?? null))
+        && (value.currentNodeId === undefined || value.currentNodeId === null
+          || typeof value.currentNodeId === 'string' && ids.includes(value.currentNodeId))
     }
     case 'graph': {
       if (!Array.isArray(value.nodes) || value.nodes.length > 30 || !Array.isArray(value.edges) || value.edges.length > 60 || !Array.isArray(value.highlightedNodeIds)) return false
@@ -275,7 +277,7 @@ export const objectRegistry: ObjectRegistry = {
   'linked-list': {
     type: 'linked-list',
     typeVersion: 1,
-    validate: (value) => validateObject<LinkedListObject>(value, 'linked-list', ['nodes']),
+    validate: (value) => validateObject<LinkedListObject>(value, 'linked-list', ['nodes', 'currentNodeId']),
   },
   graph: {
     type: 'graph',

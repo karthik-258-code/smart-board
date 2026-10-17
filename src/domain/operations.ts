@@ -32,6 +32,8 @@ export type BoardOperation =
   | { type: 'linked-list/remove'; objectId: string; nodeId: string }
   | { type: 'linked-list/reverse'; objectId: string }
   | { type: 'linked-list/restore-nodes'; objectId: string; nodes: LinkedListNode[] }
+  | { type: 'linked-list/set-current-node'; objectId: string; nodeId?: string | null }
+  | { type: 'linked-list/restore-state'; objectId: string; nodes: LinkedListNode[]; currentNodeId?: string | null }
   | { type: 'graph/add-node'; objectId: string; node: GraphNode }
   | { type: 'graph/remove-node'; objectId: string; nodeId: string }
   | { type: 'graph/add-edge'; objectId: string; edge: GraphEdge }
@@ -402,8 +404,40 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
           nodes = operation.nodes
         }
         nodes = nodes.map((node, index) => ({ ...node, nextId: nodes[index + 1]?.id ?? null }))
-        updated = { ...current, nodes }
-        inverse = { type: 'linked-list/restore-nodes', objectId: current.id, nodes: priorNodes }
+        const currentNodeId = current.currentNodeId !== undefined && current.currentNodeId !== null && !nodes.some((node) => node.id === current.currentNodeId)
+          ? null
+          : current.currentNodeId
+        updated = { ...current, nodes, ...(currentNodeId === undefined ? {} : { currentNodeId }) }
+        inverse = current.currentNodeId === undefined
+          ? { type: 'linked-list/restore-nodes', objectId: current.id, nodes: priorNodes }
+          : { type: 'linked-list/restore-state', objectId: current.id, nodes: priorNodes, currentNodeId: current.currentNodeId }
+      }
+      break
+    case 'linked-list/set-current-node':
+      if (current.type !== 'linked-list') return fail('incompatible_object', 'Operation requires a linked list.', current.id)
+      if (operation.nodeId !== undefined && operation.nodeId !== null && !current.nodes.some((node) => node.id === operation.nodeId)) {
+        return fail('missing_node', 'Current node does not exist in the linked list.', current.id)
+      }
+      if (operation.nodeId === undefined) {
+        const list = { ...current }
+        delete list.currentNodeId
+        updated = list
+      } else updated = { ...current, currentNodeId: operation.nodeId }
+      inverse = { type: 'linked-list/set-current-node', objectId: current.id,
+        ...(Object.hasOwn(current, 'currentNodeId') ? { nodeId: current.currentNodeId } : {}) }
+      break
+    case 'linked-list/restore-state':
+      if (current.type !== 'linked-list') return fail('incompatible_object', 'Operation requires a linked list.', current.id)
+      if (!Array.isArray(operation.nodes)) return fail('invalid_nodes', 'Restored nodes must be a list.', current.id)
+      {
+        const restored = { ...current, nodes: operation.nodes }
+        if (Object.hasOwn(operation, 'currentNodeId')) updated = { ...restored, currentNodeId: operation.currentNodeId }
+        else {
+          delete restored.currentNodeId
+          updated = restored
+        }
+        inverse = { type: 'linked-list/restore-state', objectId: current.id, nodes: current.nodes,
+          ...(Object.hasOwn(current, 'currentNodeId') ? { currentNodeId: current.currentNodeId } : {}) }
       }
       break
     case 'graph/add-node':

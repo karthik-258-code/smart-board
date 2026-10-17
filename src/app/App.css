@@ -117,6 +117,7 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .container-empty { fill: var(--ink-soft); font-size: 11px; }
 .linked-list-link { stroke: var(--accent); stroke-width: 2; }
 .linked-list-node-value, .linked-list-node-pointer, .linked-list-empty { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.linked-list-node-current .linked-list-node-value { fill: var(--accent-soft); stroke-width: 2.4; }
 .linked-list-node-pointer { fill: var(--accent-soft); }
 .linked-list-node-label { fill: var(--ink); font-size: 14px; font-weight: 750; }
 .linked-list-next-label, .linked-list-index, .linked-list-null-label, .linked-list-empty-label { fill: var(--ink-soft); font-size: 10px; font-weight: 700; }

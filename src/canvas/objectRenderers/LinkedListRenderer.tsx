@@ -17,7 +17,7 @@ export function LinkedListRenderer({ object }: { object: LinkedListObject }) {
       />)}
       {object.nodes.map((node, index) => {
         const x = index * (nodeWidth + gap)
-        return <g className="linked-list-node" data-node-id={node.id} key={node.id} transform={`translate(${x} 0)`}>
+        return <g className={`linked-list-node${object.currentNodeId === node.id ? ' linked-list-node-current' : ''}`} data-node-id={node.id} key={node.id} transform={`translate(${x} 0)`}>
           <rect className="linked-list-node-value" width="54" height="46" rx="7" />
           <text className="linked-list-node-label" x="27" y="24" textAnchor="middle" dominantBaseline="middle">{String(node.value)}</text>
           <rect className="linked-list-node-pointer" x="56" y="12" width="20" height="22" rx="4" />

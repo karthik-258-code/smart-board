@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Smart Script is the first executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, and queue traversal patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
+Smart Script is the first executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, queue, and linked-list traversal patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
 
 ## Supported source
 
@@ -12,7 +12,7 @@ for (let i = 0; i < values.length; i++) {
 }
 ```
 
-The loop variable may use another identifier in place of `i`. Its start must be a non-negative integer literal. The only sequence symbol is `values`; the selected array, stack, or queue supplies its contents. The loop body can contain one or more of these statements:
+The loop variable may use another identifier in place of `i`. Its start must be a non-negative integer literal. The only sequence symbol is `values`; the selected array, stack, queue, or linked list supplies its contents. The loop body can contain one or more of these statements:
 
 ```ts
 highlight(i);
@@ -22,7 +22,7 @@ total += values[i];
 total += i;
 ```
 
-Each statement highlights the current array cell or container value. If the selected array has one pointer named after the loop variable, the runner also moves that pointer to the current index. Multiple matching pointers are considered ambiguous and stop execution. Stack traversal uses the stack's stored bottom-to-top order; the renderer highlights the matching cell at its displayed position. Queue traversal follows front-to-back order. Container highlights are reversible board operations and persist with the execution trace.
+Each statement highlights the current array cell, container value, or linked-list node. If the selected array has one pointer named after the loop variable, the runner also moves that pointer to the current index. Multiple matching pointers are considered ambiguous and stop execution. Stack traversal uses the stack's stored bottom-to-top order; the renderer highlights the matching cell at its displayed position. Queue traversal follows front-to-back order. Linked-list traversal follows the current node chain and stores the selected node ID, so reversing the list preserves the node selection. These highlights are reversible board operations and persist with the execution trace.
 
 Before the loop, scripts may declare unique integer variables such as `let total = 0;`. Accumulator statements update those variables and each timeline snapshot shows their values. Array accumulators require numeric values. Since the current visualization is an array, accumulator statements also highlight the value being read.
 

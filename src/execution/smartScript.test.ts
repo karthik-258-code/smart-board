@@ -24,6 +24,15 @@ function historyWithContainer(values: Array<string | number>, kind: 'stack' | 'q
   return history
 }
 
+function historyWithLinkedList(values: Array<string | number>) {
+  let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
+  const nodes = values.map((value, index) => ({ id: `list-node-${index}`, value, nextId: values[index + 1] === undefined ? null : `list-node-${index + 1}` }))
+  const added = dispatch(history, { type: 'object/add', object: { id: 'linked-list-board', type: 'linked-list', typeVersion: 1, position: { x: 0, y: 0 }, nodes } })
+  if (!added.ok) throw new Error(added.error.message)
+  history = added.value
+  return history
+}
+
 describe('Smart Script array traversal', () => {
   it('traverses a stack or queue and highlights the current contained value', () => {
     const initial = historyWithContainer([4, 8, 12], 'queue')
@@ -36,6 +45,20 @@ describe('Smart Script array traversal', () => {
       ])
       const final = stateAt(result.value.history, result.value.history.cursor)
       expect(final.ok && final.value.objects.find((object) => object.id === 'container-board')).toMatchObject({ currentIndex: 2 })
+    }
+  })
+
+  it('traverses a linked list and highlights the current node by stable ID', () => {
+    const initial = historyWithLinkedList([4, 8, 12])
+    const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', initial, 'linked-list-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.events.map((event) => event.operation.type)).toEqual([
+        'linked-list/set-current-node', 'linked-list/set-current-node', 'linked-list/set-current-node',
+      ])
+      const final = stateAt(result.value.history, result.value.history.cursor)
+      expect(final.ok && final.value.objects.find((object) => object.id === 'linked-list-board')).toMatchObject({ currentNodeId: 'list-node-2' })
     }
   })
 

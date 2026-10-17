@@ -380,6 +380,25 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(stackId)
   })
 
+  it('runs and restores a Smart Script trace over linked-list nodes', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add linked list' }))
+    const listId = savedBoard().objects.find((object: BoardObject) => object.type === 'linked-list')?.id
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: listId } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), {
+      target: { value: 'for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    const list = screen.getByRole('button', { name: /Linked list: 4 → 8 → 12, current node index 2/ })
+    expect(list.querySelector('.linked-list-node-current')).toHaveAttribute('data-node-id')
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.execution).toMatchObject({ arrayId: listId })
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: /Linked list: 4 → 8 → 12, current node index 2/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(listId)
+  })
+
   it('loads a replayable algorithm example and persists its history', () => {
     render(<App />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'array-traversal' } })

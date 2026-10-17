@@ -44,12 +44,12 @@ The current app supports a manually authored board with:
 - Replayable examples for array traversal, binary search, sliding window, Fibonacci DP, breadth-first search, and depth-first search.
 - Guided lesson sequences for array foundations, windows and dynamic programming, and graph search, with objectives and lesson-step navigation.
 - Read-only TypeScript source traces for built-in examples; the current timeline step highlights its mapped source line, and diverged manual history clears the mapping.
-- A constrained Smart Script runner for array, stack, and queue traversal. It steps a bounded `for` loop, records the index variable, highlights the current value, and moves a matching array pointer through the same reversible board history.
+- A constrained Smart Script runner for array, stack, queue, and linked-list traversal. It steps a bounded `for` loop, records the index variable, highlights the current value or node, and moves a matching array pointer through the same reversible board history.
 - Local browser saving restores the full timeline, including undo/redo branches, the current cursor, and Smart Script source and variable snapshots. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline and script traces for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports array, stack, and queue traversal, numeric accumulators, arithmetic expressions, nested numeric `if/else`, short-circuit `&&` / `||`, `break` and `continue`, plus a binary-search template for sorted numeric arrays. The runner shows variables, the inspected value and comparison result, highlights the current sequence value, and can synchronize a matching array pointer, a binary-search `mid` pointer, and a range named `search`. Source length, expression size, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
+Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports array, stack, queue, and linked-list traversal, numeric accumulators, arithmetic expressions, nested numeric `if/else`, short-circuit `&&` / `||`, `break` and `continue`, plus a binary-search template for sorted numeric arrays. The runner shows variables, the inspected value and comparison result, highlights the current sequence value or node, and can synchronize a matching array pointer, a binary-search `mid` pointer, and a range named `search`. Source length, expression size, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
 
 ## Project description
 
@@ -294,7 +294,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, and queue traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus a fixed binary-search template for arrays. Remaining work: broader control flow, more data-structure mappings, and richer runtime inspection.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, queue, and linked-list traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus a fixed binary-search template for arrays. Remaining work: broader control flow, more data-structure mappings, and richer runtime inspection.
 
 ### Phase 6: Persist and share
 
