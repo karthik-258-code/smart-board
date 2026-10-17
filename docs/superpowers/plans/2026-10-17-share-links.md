@@ -69,7 +69,7 @@
 - [x] Test accept, decline, invalid link, and URL cleanup.
 - [x] Run app tests and verify failures.
 - [x] Parse fragment on startup; confirm replacement; import and persist validated history only after acceptance.
-- [ ] Run app tests, full suite, build, lint, and `git diff --check`.
+- [x] Run app tests, full suite (244 passing), build, lint, and `git diff --check`.
 - [x] Commit and push the completed milestone.
 
 **Verification:** `npx vitest run --pool=forks --maxWorkers=1 --isolate=false`, `npm run build`, `npm run lint`, and `git diff --check`.
