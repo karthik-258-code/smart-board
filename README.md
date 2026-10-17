@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files, DP tables, freehand drawing, practice checkpoints, stacks, queues, and a bounded array-script runner are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files and share links, DP tables, freehand drawing, practice checkpoints, stacks, queues, and a bounded array-script runner are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -47,6 +47,7 @@ The current app supports a manually authored board with:
 - A constrained Smart Script runner for array, stack, queue, and linked-list traversal. It steps a bounded `for` loop, records the index variable, highlights the current value or node, and moves a matching array pointer through the same reversible board history.
 - Local browser saving restores the full timeline, including undo/redo branches, the current cursor, and Smart Script source and variable snapshots. Legacy board snapshots still load. Invalid saved data stays untouched until the user chooses to start a new board.
 - Import and export versioned `.smart-board.json` files with full timeline and script traces for manual sharing. Imports validate before replacement and require confirmation.
+- Create compressed, self-contained share links with full timelines. Opening a link validates the board and asks before replacing local work. Links are unencrypted and limited to 256 KiB; larger boards use file export.
 - Light and dark themes, with accessible names and visible selection states.
 
 Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports array, stack, queue, and linked-list traversal, numeric accumulators, arithmetic expressions, nested numeric `if/else`, short-circuit `&&` / `||`, `break` and `continue`, plus a binary-search template for sorted numeric arrays. The runner shows variables, the inspected value and comparison result, highlights the current sequence value or node, and can synchronize a matching array pointer, a binary-search `mid` pointer, and a range named `search`. Source length, expression size, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
@@ -226,7 +227,7 @@ The same approach should work without step 7: manual mode is a complete way to c
 
 ## Conceptual architecture
 
-The following modules describe a possible separation of responsibilities. They are architectural concepts, not a statement about the current codebase or a chosen technology stack.
+The following modules describe the current separation of responsibilities at a product level. The implementation uses a modular TypeScript and React application with no required backend.
 
 | Module | Responsibility |
 | --- | --- |
@@ -237,7 +238,7 @@ The following modules describe a possible separation of responsibilities. They a
 | **Execution controller** | Coordinate run, pause, stepping, restart, and timeline navigation. |
 | **Code adapter** | Translate supported runtime events into source-line, variable, and data-state updates. |
 | **Presentation controls** | Provide controls and state summaries appropriate for teaching and demonstration. |
-| **Persistence and sharing** | A future capability for saving, reopening, and sharing board documents. |
+| **Persistence and sharing** | Save validated histories locally, exchange board files, and create compressed self-contained share links. |
 
 A key architectural goal is to keep algorithm explanations composable. A two-pointer example should use arrays, pointers, comparisons, ranges, and highlights; it should not require those primitives to be implemented only inside a dedicated two-pointer visualizer.
 
@@ -298,11 +299,11 @@ Built-in TypeScript source snippets map replayable example operations to highlig
 
 ### Phase 6: Persist and share
 
-Local save/restore and manual JSON file sharing preserve full timelines. Cloud links and collaboration remain future work.
+Local save/restore, manual JSON file sharing, and compressed share links preserve full timelines. Server-backed sharing and real-time collaboration remain future work.
 
 ## Current status
 
-The implemented features above are present in the app and covered by tests. Remaining product milestones include extending constrained code execution and variable synchronization, collaboration, and cloud sharing.
+The implemented features above are present in the app and covered by tests. Remaining product milestones include extending constrained code execution and variable synchronization, collaboration, and server-backed sharing.
 
 Future work should build on the reusable object, operation, and history contracts without treating planned capabilities as shipped features.
 

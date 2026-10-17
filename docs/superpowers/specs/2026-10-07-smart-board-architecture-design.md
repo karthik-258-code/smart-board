@@ -1,13 +1,13 @@
 # Smart Board Architecture Design
 
-**Status:** Draft for review  
+**Status:** Approved architecture baseline; implementation status updated 2026-10-17
 **Date:** 2026-10-07
 
 ## Purpose
 
 Smart Board is a flexible visual workspace for making changing systems understandable. Algorithm explanations are the first use case. The product should also support learning, teaching, debugging, interview practice, and reusable interactive tutorials over time.
 
-This document defines a technology-neutral architecture and staged build roadmap. It does not select a programming language, framework, or code execution service. The repository currently contains a product concept, not an implementation.
+This document defines a technology-neutral architecture and staged build roadmap. The implementation now uses TypeScript, React, and Vite, with constrained Smart Script interpretation and local-first persistence. This baseline remains the product and architecture reference; current delivery status appears in the repository README and dated implementation plans.
 
 ## Product principles
 
@@ -117,7 +117,9 @@ Choose one initial language and a constrained execution method. Add an adapter t
 
 ### Phase 6: Persistence, sharing, and expansion
 
-Add shareable board documents, templates, and additional object types. Add external extension support only after internal object contracts have proven stable. Consider collaboration as a separate design once sharing requirements are known.
+**Implemented:** Local board history, portable files, compressed self-contained share links, reusable examples, and internal types for arrays, lists, stacks, queues, tables, checkpoints, graphs, trees, heaps, hash tables, tries, and drawing.
+
+**Remaining:** Server-backed sharing, account and access controls, real-time collaboration, version migrations beyond the supported format, and external extension support. Design collaboration separately around concrete identity, permissions, and conflict-resolution requirements.
 
 **Exit check:** Open a shared document, replay its history, migrate supported older documents, and add a new internal object type without changing state engine contracts.
 

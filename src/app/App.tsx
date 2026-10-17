@@ -16,6 +16,7 @@ import { ThemeControl } from './ThemeControl'
 import { CodeTracePanel } from './CodeTracePanel'
 import { SmartScriptPanel, type SmartScriptView } from './SmartScriptPanel'
 import { runSmartScript } from '../execution/smartScript'
+import { parseBoardShareFragment } from '../persistence/shareLink'
 import './App.css'
 import '../styles/themes.css'
 
@@ -221,6 +222,8 @@ function App() {
 
   function importDocument(importedHistory: HistoryState) {
     setPlaying(false)
+    setPracticeId(null)
+    setDrawingMode(false)
     setHistory(importedHistory)
     setSelectedId(null)
     setError(null)
@@ -349,6 +352,19 @@ function App() {
     if (playing) setPlaying(false)
     else if (history.cursor < history.entries.length) setPlaying(true)
   }
+
+  useEffect(() => {
+    const fragment = window.location.hash
+    if (!fragment.startsWith('#smart-board=')) return
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    void parseBoardShareFragment(fragment).then((result) => {
+      if (!result.ok) {
+        setError(result.error.message)
+        return
+      }
+      if (window.confirm('Open shared board and replace the current board stored on this device?')) importDocument(result.value)
+    }).catch(() => setError('The shared board link could not be opened.'))
+  }, [])
 
   useEffect(() => {
     if (!playing) return

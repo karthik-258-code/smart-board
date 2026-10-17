@@ -4,6 +4,8 @@ import App from './App'
 import { createEmptyBoard, type BoardObject } from '../domain/model'
 import { dispatch, stateAt, undo, type HistoryState } from '../domain/history'
 import { serializeBoardFile } from '../persistence/boardFile'
+import { createBoardShareUrl } from '../persistence/shareLink'
+import { CompressionStream } from 'node:stream/web'
 
 const storageKey = 'smart-board:document:v1'
 
@@ -20,6 +22,16 @@ beforeEach(() => localStorage.clear())
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Smart Board app shell', () => {
+  async function sharedArrayLink() {
+    vi.stubGlobal('CompressionStream', CompressionStream)
+    const history: HistoryState = { initialDocument: createEmptyBoard('shared-board'), entries: [], cursor: 0 }
+    const added = dispatch(history, { type: 'object/add', object: { id: 'shared-array', type: 'array', typeVersion: 1, position: { x: 20, y: 30 }, values: [6, 7], highlightedIndices: [] } })
+    if (!added.ok) throw new Error(added.error.message)
+    const shareLink = await createBoardShareUrl(added.value, window.location.href)
+    if (!shareLink.ok) throw new Error(shareLink.error.message)
+    window.history.replaceState(null, '', `${new URL(shareLink.value).pathname}${new URL(shareLink.value).search}${new URL(shareLink.value).hash}`)
+  }
+
   function createTimeline() {
     fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
     fireEvent.click(screen.getByRole('button', { name: 'Add note' }))
@@ -30,6 +42,46 @@ describe('Smart Board app shell', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'Smart Board', level: 1 })).toBeInTheDocument()
+  })
+
+  it('confirms, imports, persists, and clears a valid shared board link', async () => {
+    await sharedArrayLink()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+
+    expect(await screen.findByRole('button', { name: 'Array: 6, 7' })).toBeInTheDocument()
+    expect(window.confirm).toHaveBeenCalledWith('Open shared board and replace the current board stored on this device?')
+    expect(window.location.hash).toBe('')
+    expect(savedBoard()?.objects).toContainEqual(expect.objectContaining({ id: 'shared-array', values: [6, 7] }))
+  })
+
+  it('keeps local board when a shared link replacement is declined', async () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    const original = localStorage.getItem(storageKey)
+    view.unmount()
+    await sharedArrayLink()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<App />)
+
+    await waitFor(() => expect(window.confirm).toHaveBeenCalled())
+    expect(localStorage.getItem(storageKey)).toBe(original)
+    expect(screen.queryByRole('button', { name: 'Array: 6, 7' })).not.toBeInTheDocument()
+    expect(window.location.hash).toBe('')
+  })
+
+  it('reports invalid share links and leaves local board data unchanged', async () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    const original = localStorage.getItem(storageKey)
+    view.unmount()
+    window.history.replaceState(null, '', '/#smart-board=%%%')
+    const viewAfterLink = render(<App />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('share link is malformed')
+    expect(localStorage.getItem(storageKey)).toBe(original)
+    expect(window.location.hash).toBe('')
+    viewAfterLink.unmount()
   })
 
   it('runs a bounded array script and follows its source and variable snapshot through history', () => {
@@ -83,12 +135,12 @@ describe('Smart Board app shell', () => {
   })
 
   it('restores Smart Script source and variables when reopening the saved board', () => {
-    const view = render(<App />)
+    const viewAfterLink = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
     const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}'
     fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), { target: { value: source } })
     fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
-    view.unmount()
+    viewAfterLink.unmount()
     render(<App />)
 
     expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(source)

@@ -1,6 +1,7 @@
-import type { ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import type { HistoryState } from '../domain/history'
 import { parseBoardFile, serializeBoardFile } from '../persistence/boardFile'
+import { createBoardShareUrl } from '../persistence/shareLink'
 
 export function BoardFileControls({
   history,
@@ -11,6 +12,9 @@ export function BoardFileControls({
   onImport: (history: HistoryState) => void
   onError: (message: string) => void
 }) {
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareStatus, setShareStatus] = useState('')
+
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget
     const file = input.files?.[0]
@@ -47,10 +51,34 @@ export function BoardFileControls({
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
+  async function createShareLink() {
+    const result = await createBoardShareUrl(history, window.location.href)
+    if (!result.ok) {
+      onError(result.error.message)
+      setShareStatus('')
+      return
+    }
+    setShareUrl(result.value)
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+      await navigator.clipboard.writeText(result.value)
+      setShareStatus('Link copied.')
+    } catch {
+      setShareStatus('Copy the link from the field.')
+    }
+  }
+
   return <div className="board-file-controls" aria-label="Board file actions">
     <button type="button" onClick={exportBoard}>Export board</button>
+    <button type="button" onClick={() => void createShareLink()}>Create share link</button>
     <label className="file-import-button">Import board
       <input aria-label="Import board file" type="file" accept=".json,application/json" onChange={handleFile} />
     </label>
+    {shareUrl && <div className="share-link-output">
+      <label htmlFor="board-share-link">Share link</label>
+      <input id="board-share-link" aria-label="Share link" type="url" readOnly value={shareUrl} onFocus={(event) => event.currentTarget.select()} />
+      <span role="status">{shareStatus}</span>
+      <p>Anyone with this link can read the board. Others need access to the hosted app.</p>
+    </div>}
   </div>
 }
