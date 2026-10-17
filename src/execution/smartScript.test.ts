@@ -40,6 +40,9 @@ describe('Smart Script array traversal', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) {
+      expect(result.value.events.map((event) => event.inspection)).toEqual([
+        { index: 0, value: 4 }, { index: 1, value: 8 }, { index: 2, value: 12 },
+      ])
       expect(result.value.events.map((event) => event.operation.type)).toEqual([
         'container/set-current-index', 'container/set-current-index', 'container/set-current-index',
       ])

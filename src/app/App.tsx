@@ -173,7 +173,7 @@ function App() {
     setPlaying(false)
     setError(null)
     const events = result.value.events.map((event, index) => ({ ...event, cursor: history.cursor + index + 1 }))
-    const snapshots = events.map(({ cursor, line, variables }) => ({ cursor, line, variables }))
+    const snapshots = events.map(({ cursor, line, variables, inspection }) => ({ cursor, line, variables, ...(inspection ? { inspection } : {}) }))
     const historyWithExecution: HistoryState = {
       ...result.value.history,
       execution: { kind: 'smart-script', source, arrayId, events: snapshots },

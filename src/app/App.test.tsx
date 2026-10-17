@@ -39,6 +39,7 @@ describe('Smart Board app shell', () => {
 
     expect(screen.getByRole('region', { name: 'Smart Script runner' })).toBeInTheDocument()
     expect(screen.getByText('i = 2')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 2 · value 12')).toBeInTheDocument()
     expect(screen.getByText('Line 2')).toBeInTheDocument()
     const array = screen.getByRole('button', { name: 'Array: 4, 8, 12' })
     expect(array.querySelector('.array-cell-highlighted')).toBeInTheDocument()
@@ -92,6 +93,7 @@ describe('Smart Board app shell', () => {
 
     expect(screen.getByRole('textbox', { name: 'Smart Script source' })).toHaveValue(source)
     expect(screen.getByText('total = 24')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 2 · value 12')).toBeInTheDocument()
   })
 
   it('runs the binary-search template and exposes the found index', () => {

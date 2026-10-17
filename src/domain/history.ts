@@ -5,7 +5,7 @@ import type { BoardOperation, OperationError } from './operations'
 import type { Result } from './result'
 
 export type HistoryEntry = { operation: BoardOperation; inverse: BoardOperation }
-export type SavedExecutionEvent = { cursor: number; line: number; variables: Record<string, number> }
+export type SavedExecutionEvent = { cursor: number; line: number; variables: Record<string, number>; inspection?: { index: number; value: string | number } }
 export type SavedExecutionTrace = { kind: 'smart-script'; source: string; arrayId: string; events: SavedExecutionEvent[] }
 export type HistoryState = { initialDocument: BoardDocument; entries: HistoryEntry[]; cursor: number; execution?: SavedExecutionTrace }
 export type HistoryError = { code: string; message: string }
@@ -68,7 +68,7 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
   let previousCursor = 0
   const events: SavedExecutionEvent[] = []
   for (const event of value.events) {
-    if (!isRecord(event) || !hasOnlyKeys(event, ['cursor', 'line', 'variables'])
+    if (!isRecord(event) || !hasOnlyKeys(event, ['cursor', 'line', 'variables', 'inspection'])
       || !Number.isInteger(event.cursor) || Number(event.cursor) <= previousCursor || Number(event.cursor) > entryCount
       || !Number.isInteger(event.line) || Number(event.line) < 1 || Number(event.line) > lines || !isRecord(event.variables)) {
       return invalidHistory('Saved script execution events do not match the source or timeline.')
@@ -80,8 +80,21 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
       }
       variables[name] = variable
     }
+    let inspection: SavedExecutionEvent['inspection']
+    if (event.inspection !== undefined) {
+      const values = target.type === 'linked-list' ? target.nodes.map((node) => node.value)
+        : target.type === 'array' || target.type === 'container' ? target.values : []
+      if (!isRecord(event.inspection) || !hasOnlyKeys(event.inspection, ['index', 'value'])
+        || !Number.isInteger(event.inspection.index) || Number(event.inspection.index) < 0 || Number(event.inspection.index) >= values.length
+        || (typeof event.inspection.value !== 'number' && typeof event.inspection.value !== 'string')
+        || (typeof event.inspection.value === 'number' && !Number.isFinite(event.inspection.value))
+        || event.inspection.value !== values[Number(event.inspection.index)]) {
+        return invalidHistory('Saved inspected values must point to a valid target index and contain a finite value.')
+      }
+      inspection = { index: Number(event.inspection.index), value: event.inspection.value }
+    }
     previousCursor = Number(event.cursor)
-    events.push({ cursor: previousCursor, line: Number(event.line), variables })
+    events.push({ cursor: previousCursor, line: Number(event.line), variables, ...(inspection ? { inspection } : {}) })
   }
   return { ok: true, value: { kind: 'smart-script', source: value.source, arrayId: value.arrayId, events } }
 }

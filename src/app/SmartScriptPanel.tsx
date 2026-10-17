@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ArrayObject, ContainerObject, LinkedListObject } from '../domain/model'
 import { binarySearchTemplate } from '../execution/smartScript'
 
-export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number> }> }
+export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number>; inspection?: { index: number; value: string | number } }> }
 
 const starterScript = 'for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}'
 
@@ -66,6 +66,7 @@ export function SmartScriptPanel({
     <div className="smart-script-inspection" aria-live="polite">
       <span>Variables</span>
       {currentEvent ? Object.entries(currentEvent.variables).map(([name, value]) => <code key={name}>{name} = {value}</code>) : <span>No runtime snapshot at this step</span>}
+      {currentEvent?.inspection && <code>Inspecting index {currentEvent.inspection.index} · value {currentEvent.inspection.value}</code>}
     </div>
     <p className="smart-script-help">Supported: array, stack, queue, and linked-list traversal with numeric accumulators, arithmetic expressions, compound <code>&amp;&amp;</code> / <code>||</code> conditions, nested <code>if/else</code>, <code>break</code>, and <code>continue</code>, or the binary-search template. Traversal maps array pointers and highlights the current container value or linked-list node. Binary search maps a <code>mid</code> pointer and a range named <code>search</code>. Other code is rejected; scripts are never evaluated as JavaScript.</p>
   </section>

@@ -5,7 +5,7 @@ import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
 export type SmartScriptError = { code: 'unsupported_syntax' | 'unsupported_input' | 'missing_array' | 'ambiguous_mapping' | 'step_limit' | 'invalid_history'; message: string; line: number }
-export type SmartScriptEvent = { line: number; variables: Record<string, number>; operation: BoardOperation }
+export type SmartScriptEvent = { line: number; variables: Record<string, number>; inspection?: { index: number; value: string | number }; operation: BoardOperation }
 export type SmartScriptRun = { history: HistoryState; events: SmartScriptEvent[]; arrayName: string; indexName: string }
 
 const HARD_ITERATION_LIMIT = 1000
@@ -290,7 +290,7 @@ export function runArrayTraversal(
       const changed = dispatch(nextHistory, operation)
       if (!changed.ok) return { code: 'invalid_history', message: changed.error.message, line }
       nextHistory = changed.value
-      events.push({ line, variables: snapshot, operation })
+      events.push({ line, variables: snapshot, inspection: { index, value: values[index] }, operation })
     }
     return null
   }
@@ -456,7 +456,7 @@ export function runBinarySearch(
       const changed = dispatch(nextHistory, operation)
       if (!changed.ok) return { code: 'invalid_history', message: changed.error.message, line }
       nextHistory = changed.value
-      events.push({ line, variables: { ...variables }, operation })
+      events.push({ line, variables: { ...variables }, inspection: indices.length ? { index: indices.at(-1)!, value: selectedArray.values[indices.at(-1)!] } : undefined, operation })
     }
     return null
   }
