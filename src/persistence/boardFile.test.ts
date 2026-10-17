@@ -44,6 +44,22 @@ describe('board file format', () => {
     expect(parseBoardFile(serialized.ok ? serialized.value : '')).toEqual({ ok: true, value: history })
   })
 
+  it('round-trips graph traversal highlights and inspected node snapshots', () => {
+    let history: HistoryState = { initialDocument: createEmptyBoard('graph-script-share'), entries: [], cursor: 0 }
+    const added = dispatch(history, { type: 'object/add', object: {
+      id: 'g', type: 'graph', typeVersion: 1, position: { x: 0, y: 0 },
+      nodes: [{ id: 'a', label: 'A', position: { x: 10, y: 10 } }], edges: [], highlightedNodeIds: [],
+    } })
+    if (!added.ok) throw new Error(added.error.message)
+    const highlighted = dispatch(added.value, { type: 'graph/set-highlighted', objectId: 'g', nodeIds: ['a'] })
+    if (!highlighted.ok) throw new Error(highlighted.error.message)
+    const source = 'let start = "A";\nlet queue = [start];\nlet visited = [start];\nwhile (queue.length > 0) {\n  let current = queue.shift();\n  highlight(current);\n  for (let neighbor of graph.neighbors(current)) {\n    if (!visited.includes(neighbor)) {\n      visited.push(neighbor);\n      queue.push(neighbor);\n    }\n  }\n}'
+    history = { ...highlighted.value, execution: { kind: 'smart-script', source, arrayId: 'g', events: [{ cursor: 2, line: 6, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 0, value: 'A' } }] } }
+
+    const serialized = serializeBoardFile(history)
+    expect(parseBoardFile(serialized.ok ? serialized.value : '')).toEqual({ ok: true, value: history })
+  })
+
   it.each([
     ['invalid_json', '{bad'],
     ['unsupported_schema_version', '{"id":"x","schemaVersion":2,"objects":[]}'],

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Smart Script is the first executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, queue, and linked-list traversal patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
+Smart Script is the first executable connection between source and the board. It is a small parser and interpreter for deliberately constrained array, stack, queue, linked-list, and graph traversal patterns. It does not execute JavaScript or TypeScript, use `eval`, or expose browser or host APIs. Unsupported source is rejected with a line-specific message before any history is changed.
 
 ## Supported source
 
@@ -79,6 +79,28 @@ while (low <= high) {
 
 The selected array must contain finite numeric values sorted in ascending order; stacks and queues cannot be used for binary search. The interpreter updates `low`, `high`, and `mid`, exposes the inspected `value` and numeric `comparison` (`value - target`), and adds `found` when it locates the target. It can move one pointer named `mid` and update one range named `search`; duplicate matching objects are reported as ambiguous. The range shows the active candidate interval and becomes empty when the target is absent.
 
+### Graph breadth-first search
+
+The panel can load a fixed breadth-first search template for an editable graph. Change only the quoted start-node label:
+
+```ts
+let start = "A";
+let queue = [start];
+let visited = [start];
+while (queue.length > 0) {
+  let current = queue.shift();
+  highlight(current);
+  for (let neighbor of graph.neighbors(current)) {
+    if (!visited.includes(neighbor)) {
+      visited.push(neighbor);
+      queue.push(neighbor);
+    }
+  }
+}
+```
+
+The start label must identify one graph node. Edges are undirected; neighbor order follows stored edge order. The interpreter highlights reachable nodes once in FIFO order. Disconnected nodes stay unhighlighted. Each visit snapshot reports the graph node index and label, `visitedCount`, and remaining `queueLength`. The template is validated and never evaluated as JavaScript.
+
 ## Execution and history
 
 The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; traversal events also record the inspected index and value, and the editor displays these at the current history cursor. The binary-search template exposes its inspected value, index, and comparison through its variable snapshot. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
@@ -87,4 +109,4 @@ The source is limited to 10,000 characters, arithmetic expressions to 256 tokens
 
 ## Explicit limits
 
-The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions, input/output, asynchronous code, or other data structures. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search control flow is fixed to the template above. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions, input/output, asynchronous code, or traversal of trees, heaps, hash tables, or tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search and graph BFS control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph BFS reports visit count, queue length, and current node. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.

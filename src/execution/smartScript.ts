@@ -1,6 +1,6 @@
 import type { HistoryState } from '../domain/history'
 import { dispatch, stateAt } from '../domain/history'
-import type { ArrayObject, BoardObject, ContainerObject, LinkedListObject } from '../domain/model'
+import type { ArrayObject, BoardObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
@@ -27,6 +27,22 @@ export const binarySearchTemplate = [
   '    low = mid + 1;',
   '  } else {',
   '    high = mid - 1;',
+  '  }',
+  '}',
+].join('\n')
+
+export const breadthFirstSearchTemplate = [
+  'let start = "A";',
+  'let queue = [start];',
+  'let visited = [start];',
+  'while (queue.length > 0) {',
+  '  let current = queue.shift();',
+  '  highlight(current);',
+  '  for (let neighbor of graph.neighbors(current)) {',
+  '    if (!visited.includes(neighbor)) {',
+  '      visited.push(neighbor);',
+  '      queue.push(neighbor);',
+  '    }',
   '  }',
   '}',
 ].join('\n')
@@ -526,6 +542,72 @@ export function runBinarySearch(
   return { ok: true, value: { history: nextHistory, events, arrayName: 'values', indexName: 'mid' } }
 }
 
+export function runGraphBreadthFirstSearch(source: string, history: HistoryState, graphObjectId: string): Result<SmartScriptRun, SmartScriptError> {
+  if (source.length > HARD_SOURCE_LENGTH_LIMIT) return fail('step_limit', `Source cannot exceed ${HARD_SOURCE_LENGTH_LIMIT} characters.`, 1)
+  const lines = source.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
+  const startMatch = /^let start = ("(?:[^"\\]|\\.)*");$/.exec(lines[0] ?? '')
+  if (!startMatch) return fail('unsupported_syntax', 'Use the Breadth-first Search template and change only the quoted start label.', 1)
+  let startLabel: unknown
+  try {
+    startLabel = JSON.parse(startMatch[1])
+  } catch {
+    return fail('unsupported_syntax', 'The start label must be a valid quoted string.', 1)
+  }
+  if (typeof startLabel !== 'string') return fail('unsupported_input', 'The start label must be a string.', 1)
+  const expectedLines = breadthFirstSearchTemplate.replace('let start = "A";', () => `let start = ${JSON.stringify(startLabel)};`).replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
+  const mismatch = expectedLines.findIndex((line, index) => line !== lines[index])
+  if (mismatch !== -1 || lines.length !== expectedLines.length) {
+    return fail('unsupported_syntax', 'Use the Breadth-first Search template without changing its algorithm.', Math.max(1, mismatch + 1))
+  }
+
+  const current = stateAt(history, history.cursor)
+  if (!current.ok) return fail('invalid_history', current.error.message, 1)
+  const graph = current.value.objects.find((object): object is GraphObject => object.id === graphObjectId && object.type === 'graph')
+  if (!graph) return fail('missing_array', 'Select a graph object before running this script.', 1)
+  const starts = graph.nodes.filter((node) => node.label === startLabel)
+  if (starts.length === 0) return fail('unsupported_input', `No graph node has the start label ${JSON.stringify(startLabel)}.`, 1)
+  if (starts.length > 1) return fail('ambiguous_mapping', `More than one graph node has the start label ${JSON.stringify(startLabel)}.`, 1)
+
+  const adjacency = new Map(graph.nodes.map((node) => [node.id, [] as string[]]))
+  for (const edge of graph.edges) {
+    adjacency.get(edge.from)?.push(edge.to)
+    adjacency.get(edge.to)?.push(edge.from)
+  }
+  const queue = [starts[0].id]
+  const discovered = new Set(queue)
+  const visited: string[] = []
+  let nextHistory = history
+  const events: SmartScriptEvent[] = []
+  while (queue.length > 0) {
+    const currentId = queue.shift()
+    if (!currentId) break
+    visited.push(currentId)
+    const currentNode = graph.nodes.find((node) => node.id === currentId)
+    if (!currentNode) return fail('invalid_history', 'The graph changed while the script was running.', 5)
+    const index = graph.nodes.findIndex((node) => node.id === currentId)
+    const operation: BoardOperation = { type: 'graph/set-highlighted', objectId: graph.id, nodeIds: [...visited] }
+    if (events.length >= HARD_EVENT_LIMIT) return fail('step_limit', `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, 6)
+    const changed = dispatch(nextHistory, operation)
+    if (!changed.ok) return fail('invalid_history', changed.error.message, 6)
+    nextHistory = changed.value
+    events.push({
+      line: 6,
+      variables: { visitedCount: visited.length, queueLength: queue.length },
+      inspection: { index, value: currentNode.label },
+      operation,
+    })
+    for (const neighborId of adjacency.get(currentId) ?? []) {
+      if (discovered.has(neighborId)) continue
+      discovered.add(neighborId)
+      queue.push(neighborId)
+    }
+  }
+
+  return { ok: true, value: { history: nextHistory, events, arrayName: 'graph', indexName: 'current' } }
+}
+
 export function runSmartScript(source: string, history: HistoryState, arrayObjectId: string): Result<SmartScriptRun, SmartScriptError> {
-  return /^\s*let\s+target\s*=/.test(source) ? runBinarySearch(source, history, arrayObjectId) : runArrayTraversal(source, history, arrayObjectId)
+  if (/^\s*let\s+target\s*=/.test(source)) return runBinarySearch(source, history, arrayObjectId)
+  if (/^\s*let\s+start\s*=\s*["']/.test(source)) return runGraphBreadthFirstSearch(source, history, arrayObjectId)
+  return runArrayTraversal(source, history, arrayObjectId)
 }

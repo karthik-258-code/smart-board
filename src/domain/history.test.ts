@@ -75,6 +75,21 @@ describe('history', () => {
     if (branched.ok) expect(branched.value).not.toHaveProperty('execution')
   })
 
+  it('validates graph BFS inspection snapshots against saved node labels and indices', () => {
+    const source = 'let start = "A";\nlet queue = [start];\nlet visited = [];\nwhile (queue.length > 0) {\n  let current = queue.shift();\n  if (!visited.includes(current)) {\n    visited.push(current);\n    highlight(current);\n    for (let neighbor of graph.neighbors(current)) {\n      if (!visited.includes(neighbor)) {\n        queue.push(neighbor);\n      }\n    }\n  }\n}'
+    let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
+    state = dispatchOrThrow(state, { type: 'object/add', object: {
+      id: 'graph', type: 'graph', typeVersion: 1, position: { x: 0, y: 0 },
+      nodes: [{ id: 'node-a', label: 'A', position: { x: 0, y: 0 } }], edges: [], highlightedNodeIds: [],
+    } })
+    state = dispatchOrThrow(state, { type: 'graph/set-highlighted', objectId: 'graph', nodeIds: ['node-a'] })
+    state = { ...state, execution: { kind: 'smart-script', source, arrayId: 'graph', events: [{ cursor: 2, line: 8, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 0, value: 'A' } }] } }
+
+    expect(validateHistory(state)).toEqual({ ok: true, value: state })
+    expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 8, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 1, value: 'A' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+    expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 8, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 0, value: 'B' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+  })
+
   it('rejects execution metadata outside the saved timeline', () => {
     const state = { initialDocument: initial, entries: [], cursor: 0, execution: { kind: 'smart-script', source: 'x', arrayId: 'array', events: [{ cursor: 1, line: 1, variables: { i: 0 } }] } }
     expect(validateHistory(state)).toMatchObject({ ok: false, error: { code: 'invalid_history' } })

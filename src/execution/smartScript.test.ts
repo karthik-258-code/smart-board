@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from '../domain/model'
 import { dispatch, stateAt, type HistoryState } from '../domain/history'
-import { runArrayTraversal, runBinarySearch } from './smartScript'
+import { buildExampleHistory } from '../examples/catalog'
+import { breadthFirstSearchTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runSmartScript } from './smartScript'
 
 function historyWithArray(values: Array<string | number>, withPointer = false) {
   let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
@@ -264,5 +265,77 @@ describe('Smart Script binary search', () => {
     const unsorted = historyWithArray([2, 8, 4])
     expect(runBinarySearch(source, unsorted, 'values-board')).toMatchObject({ ok: false, error: { code: 'unsupported_input' } })
     expect(runBinarySearch('while (true) { unsafe(); }', unsorted, 'values-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
+  })
+})
+
+describe('Smart Script graph breadth-first search', () => {
+  function graphHistory(nodes: Array<{ id: string; label: string }>, edges: Array<{ id: string; from: string; to: string }>): HistoryState {
+    let history: HistoryState = { initialDocument: createEmptyBoard('graph-script-test'), entries: [], cursor: 0 }
+    const added = dispatch(history, { type: 'object/add', object: {
+      id: 'graph-board', type: 'graph', typeVersion: 1, position: { x: 0, y: 0 },
+      nodes: nodes.map((node, index) => ({ ...node, position: { x: index * 100, y: 0 } })), edges, highlightedNodeIds: [],
+    } })
+    if (!added.ok) throw new Error(added.error.message)
+    history = added.value
+    return history
+  }
+
+  it('visits built-in graph neighbors in FIFO edge order and records inspected labels', () => {
+    const example = buildExampleHistory('breadth-first-search')
+    if (!example.ok) throw new Error(example.error.message)
+    const initial = example.value
+    const result = runGraphBreadthFirstSearch(breadthFirstSearchTemplate, initial, 'example-graph')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(['A', 'B', 'C', 'D'])
+    expect(result.value.events.map((event) => event.line)).toEqual([6, 6, 6, 6])
+    expect(result.value.events.map((event) => event.variables.visitedCount)).toEqual([1, 2, 3, 4])
+    expect(result.value.events.map((event) => event.variables.queueLength)).toEqual([0, 1, 1, 0])
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'example-graph')).toMatchObject({ highlightedNodeIds: ['a', 'b', 'c', 'd'] })
+  })
+
+  it('terminates on cycles and leaves disconnected components unhighlighted', () => {
+    const initial = graphHistory(
+      [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }, { id: 'd', label: 'D' }],
+      [{ id: 'ab', from: 'a', to: 'b' }, { id: 'bc', from: 'b', to: 'c' }, { id: 'ca', from: 'c', to: 'a' }],
+    )
+    const result = runGraphBreadthFirstSearch(breadthFirstSearchTemplate, initial, 'graph-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(['A', 'B', 'C'])
+    expect(result.value.events).toHaveLength(3)
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'graph-board')).toMatchObject({ highlightedNodeIds: ['a', 'b', 'c'] })
+  })
+
+  it('rejects missing or ambiguous start labels and edited template lines without changing history', () => {
+    const missing = graphHistory([{ id: 'a', label: 'A' }], [])
+    const duplicate = graphHistory([{ id: 'a', label: 'A' }, { id: 'b', label: 'A' }], [])
+
+    expect(runGraphBreadthFirstSearch(breadthFirstSearchTemplate.replace('"A"', '"Z"'), missing, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 1 } })
+    expect(runGraphBreadthFirstSearch(breadthFirstSearchTemplate, duplicate, 'graph-board')).toMatchObject({ ok: false, error: { code: 'ambiguous_mapping', line: 1 } })
+    expect(runGraphBreadthFirstSearch(breadthFirstSearchTemplate.replace('queue.shift()', 'queue.pop()'), missing, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
+    expect(missing.entries).toHaveLength(1)
+  })
+
+  it('uses the graph template dispatch through the shared Smart Script entry point', () => {
+    const initial = graphHistory([{ id: 'a', label: 'A' }], [])
+
+    const result = runSmartScript(breadthFirstSearchTemplate, initial, 'graph-board')
+    expect(result.ok).toBe(true)
+  })
+
+  it('accepts start labels containing replacement-token sequences', () => {
+    const label = "$&$'$`"
+    const initial = graphHistory([{ id: 'special', label }], [])
+    const source = breadthFirstSearchTemplate.replace('"A"', () => JSON.stringify(label))
+
+    const result = runGraphBreadthFirstSearch(source, initial, 'graph-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events[0]?.inspection?.value).toBe(label)
   })
 })

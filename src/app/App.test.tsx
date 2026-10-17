@@ -100,6 +100,26 @@ describe('Smart Board app shell', () => {
     expect(screen.getByText('i = 1')).toBeInTheDocument()
   })
 
+  it('runs graph BFS, highlights vertices, and steps back through inspected nodes', () => {
+    const view = render(<App />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'breadth-first-search' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load example' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: 'example-graph' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use breadth-first search template' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('Safe subset · graph breadth-first search')).toBeInTheDocument()
+    expect(screen.getByText('visitedCount = 4')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 3 · value D')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
+    expect(screen.getByText('visitedCount = 3')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 2 · value C')).toBeInTheDocument()
+    view.unmount()
+    render(<App />)
+    expect(screen.getByText('visitedCount = 3')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 2 · value C')).toBeInTheDocument()
+  })
+
   it('runs conditional traversal and exposes its branch variables in the runner', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
