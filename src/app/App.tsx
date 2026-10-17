@@ -96,6 +96,7 @@ function App() {
   }, [history])
   const traceState = getCodeTraceForHistory(history)
   const arrays = board.objects.filter((object): object is Extract<BoardObject, { type: 'array' }> => object.type === 'array')
+  const containers = board.objects.filter((object): object is Extract<BoardObject, { type: 'container' }> => object.type === 'container')
   const selectedObject = board.objects.find((object) => object.id === selectedId) ?? null
   const practiceObject = board.objects.find((object) => object.id === practiceId)
   const practiceCheckpoint = practiceObject?.type === 'checkpoint' ? practiceObject : null
@@ -413,7 +414,7 @@ function App() {
       </div>
 
       {traceState && <CodeTracePanel trace={traceState.trace} currentLine={traceState.currentLine} />}
-      <SmartScriptPanel arrays={arrays} cursor={history.cursor} execution={codeExecution} onRun={runScript} />
+      <SmartScriptPanel arrays={arrays} containers={containers} cursor={history.cursor} execution={codeExecution} onRun={runScript} />
 
       <div className="workspace-layout">
         <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} onLoadExample={loadExample} />

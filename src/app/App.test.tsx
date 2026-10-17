@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { createEmptyBoard } from '../domain/model'
+import { createEmptyBoard, type BoardObject } from '../domain/model'
 import { dispatch, stateAt, undo, type HistoryState } from '../domain/history'
 import { serializeBoardFile } from '../persistence/boardFile'
 
@@ -353,6 +353,31 @@ describe('Smart Board app shell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
     expect(screen.getByRole('button', { name: 'Queue: 3, 7' })).toBeInTheDocument()
     expect(savedBoard().objects).toHaveLength(2)
+  })
+
+  it('runs and restores a Smart Script trace over a stack', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add stack' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'stack value' }), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'stack value' }), { target: { value: '8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Push' }))
+
+    const stackId = savedBoard().objects.find((object: BoardObject) => object.type === 'container')?.id
+    expect(stackId).toBeTruthy()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: stackId } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), {
+      target: { value: 'for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    const stack = screen.getByRole('button', { name: /Stack: 4, 8, current item index 1/ })
+    expect(stack.querySelector('.container-cell-current')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.execution).toMatchObject({ arrayId: stackId })
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: /Stack: 4, 8, current item index 1/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(stackId)
   })
 
   it('loads a replayable algorithm example and persists its history', () => {

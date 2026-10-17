@@ -112,6 +112,7 @@ marker#dependency-arrow path { fill: var(--pointer); stroke: none; }
 .container-surface { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
 .container-title, .container-end-label { fill: var(--ink-soft); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
 .container-cell { fill: var(--array-cell); stroke: var(--accent); stroke-width: 1.4; }
+.container-cell-current { fill: var(--accent-soft); stroke-width: 2.4; }
 .container-value { fill: var(--ink); font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .container-empty { fill: var(--ink-soft); font-size: 11px; }
 .linked-list-link { stroke: var(--accent); stroke-width: 2; }

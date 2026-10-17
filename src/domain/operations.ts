@@ -26,6 +26,8 @@ export type BoardOperation =
   | { type: 'container/push'; objectId: string; value: string | number }
   | { type: 'container/remove'; objectId: string }
   | { type: 'container/restore-values'; objectId: string; values: Array<string | number> }
+  | { type: 'container/set-current-index'; objectId: string; index?: number | null }
+  | { type: 'container/restore-state'; objectId: string; values: Array<string | number>; currentIndex?: number | null }
   | { type: 'linked-list/insert'; objectId: string; afterId: string | null; nodeId: string; value: string | number }
   | { type: 'linked-list/remove'; objectId: string; nodeId: string }
   | { type: 'linked-list/reverse'; objectId: string }
@@ -307,7 +309,9 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
       if (current.values.length >= 20) return fail('container_full', 'Container cannot hold more than 20 values.', current.id)
       if (typeof operation.value === 'number' && !Number.isFinite(operation.value)) return fail('invalid_value', 'Container values must be finite numbers or text.', current.id)
       updated = { ...current, values: [...current.values, operation.value] }
-      inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+      inverse = current.currentIndex === undefined
+        ? { type: 'container/restore-values', objectId: current.id, values: current.values }
+        : { type: 'container/restore-state', objectId: current.id, values: current.values, currentIndex: current.currentIndex }
       break
     case 'container/remove':
       if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
@@ -316,14 +320,58 @@ export function applyOperation(document: BoardDocument, operation: BoardOperatio
         const values = [...current.values]
         if (current.kind === 'stack') values.pop()
         else values.shift()
-        updated = { ...current, values }
-        inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+        let currentIndex = current.currentIndex
+        if (typeof currentIndex === 'number') {
+          currentIndex = current.kind === 'queue'
+            ? currentIndex === 0 ? null : currentIndex - 1
+            : currentIndex === current.values.length - 1 ? null : currentIndex
+        }
+        updated = { ...current, values, ...(currentIndex === undefined ? {} : { currentIndex }) }
+        inverse = current.currentIndex === undefined
+          ? { type: 'container/restore-values', objectId: current.id, values: current.values }
+          : { type: 'container/restore-state', objectId: current.id, values: current.values, currentIndex: current.currentIndex }
       }
       break
     case 'container/restore-values':
       if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
-      updated = { ...current, values: operation.values }
-      inverse = { type: 'container/restore-values', objectId: current.id, values: current.values }
+      updated = { ...current, values: operation.values,
+        ...(typeof current.currentIndex === 'number' && current.currentIndex >= operation.values.length ? { currentIndex: null } : {}) }
+      inverse = current.currentIndex === undefined
+        ? { type: 'container/restore-values', objectId: current.id, values: current.values }
+        : { type: 'container/restore-state', objectId: current.id, values: current.values, currentIndex: current.currentIndex }
+      break
+    case 'container/set-current-index':
+      if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
+      if (operation.index !== undefined && operation.index !== null
+        && (!Number.isInteger(operation.index) || operation.index < 0 || operation.index >= current.values.length)) {
+        return fail('invalid_index', 'Current item index is outside the container.', current.id, operation.index)
+      }
+      if (operation.index === undefined) {
+        const container = { ...current }
+        delete container.currentIndex
+        updated = container
+      } else updated = { ...current, currentIndex: operation.index }
+      inverse = { type: 'container/set-current-index', objectId: current.id,
+        ...(Object.hasOwn(current, 'currentIndex') ? { index: current.currentIndex } : {}) }
+      break
+    case 'container/restore-state':
+      if (current.type !== 'container') return fail('incompatible_object', 'Operation requires a stack or queue.', current.id)
+      if (!Array.isArray(operation.values) || operation.values.length > 20
+        || !operation.values.every((value) => typeof value === 'string' || typeof value === 'number' && Number.isFinite(value))) {
+        return fail('invalid_value', 'Restored container values must be finite numbers or text.', current.id)
+      }
+      if (operation.currentIndex !== undefined && operation.currentIndex !== null
+        && (!Number.isInteger(operation.currentIndex) || operation.currentIndex < 0 || operation.currentIndex >= operation.values.length)) {
+        return fail('invalid_index', 'Restored current item index is outside the container.', current.id, operation.currentIndex)
+      }
+      const restored = { ...current, values: operation.values }
+      if (Object.hasOwn(operation, 'currentIndex')) updated = { ...restored, currentIndex: operation.currentIndex }
+      else {
+        delete restored.currentIndex
+        updated = restored
+      }
+      inverse = { type: 'container/restore-state', objectId: current.id, values: current.values,
+        ...(Object.hasOwn(current, 'currentIndex') ? { currentIndex: current.currentIndex } : {}) }
       break
     case 'linked-list/insert':
     case 'linked-list/remove':

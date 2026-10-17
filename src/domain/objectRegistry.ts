@@ -121,6 +121,8 @@ function hasTypeSpecificFields(value: Record<string, unknown>, type: BoardObject
     case 'container':
       return (value.kind === 'stack' || value.kind === 'queue') && Array.isArray(value.values) && value.values.length <= 20
         && value.values.every((item) => typeof item === 'string' || isFiniteNumber(item))
+        && (value.currentIndex === undefined || value.currentIndex === null
+          || Number.isInteger(value.currentIndex) && Number(value.currentIndex) >= 0 && Number(value.currentIndex) < value.values.length)
     case 'linked-list': {
       if (!Array.isArray(value.nodes) || value.nodes.length > 20) return false
       const nodes = value.nodes
@@ -268,7 +270,7 @@ export const objectRegistry: ObjectRegistry = {
   container: {
     type: 'container',
     typeVersion: 1,
-    validate: (value) => validateObject<ContainerObject>(value, 'container', ['kind', 'values']),
+    validate: (value) => validateObject<ContainerObject>(value, 'container', ['kind', 'values', 'currentIndex']),
   },
   'linked-list': {
     type: 'linked-list',

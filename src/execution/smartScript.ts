@@ -1,6 +1,6 @@
 import type { HistoryState } from '../domain/history'
 import { dispatch, stateAt } from '../domain/history'
-import type { ArrayObject, BoardObject } from '../domain/model'
+import type { ArrayObject, BoardObject, ContainerObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
@@ -262,13 +262,16 @@ export function runArrayTraversal(
 
   const current = stateAt(history, history.cursor)
   if (!current.ok) return fail('invalid_history', current.error.message, 1)
-  const array = current.value.objects.find((object): object is ArrayObject => object.id === arrayObjectId && object.type === 'array')
-  if (!array) return fail('missing_array', 'Select an array object before running this script.', 1)
-  const selectedArray = array
-
-  const matchingPointers = current.value.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
-    object.type === 'pointer' && object.targetObjectId === selectedArray.id && object.name === indexName,
+  const target = current.value.objects.find((object): object is ArrayObject | ContainerObject =>
+    object.id === arrayObjectId && (object.type === 'array' || object.type === 'container'),
   )
+  if (!target) return fail('missing_array', 'Select an array, stack, or queue before running this script.', 1)
+  const selectedTarget = target
+  const values = selectedTarget.values
+
+  const matchingPointers = selectedTarget.type === 'array' ? current.value.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
+    object.type === 'pointer' && object.targetObjectId === selectedTarget.id && object.name === indexName,
+  ) : []
   if (matchingPointers.length > 1) return fail('ambiguous_mapping', `More than one pointer named ${indexName} targets this array. Rename or remove the duplicate pointer.`, 1)
   const pointer = matchingPointers[0]
   variables[indexName] = initialIndex
@@ -276,7 +279,9 @@ export function runArrayTraversal(
   const events: SmartScriptEvent[] = []
   function applyStep(line: number, index: number): SmartScriptError | null {
     const snapshot = { ...variables }
-    const operations: BoardOperation[] = [{ type: 'array/set-highlight', objectId: selectedArray.id, indices: [index] }]
+    const operations: BoardOperation[] = [selectedTarget.type === 'array'
+      ? { type: 'array/set-highlight', objectId: selectedTarget.id, indices: [index] }
+      : { type: 'container/set-current-index', objectId: selectedTarget.id, index }]
     if (pointer) operations.push({ type: 'pointer/move', objectId: pointer.id, index })
     for (const operation of operations) {
       if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line }
@@ -306,7 +311,7 @@ export function runArrayTraversal(
         ? { value }
         : { error: { code: 'unsupported_input', message: 'Arithmetic expressions must stay finite.', line } }
     }
-    const value = expression.kind === 'array-value' ? selectedArray.values[index]
+    const value = expression.kind === 'array-value' ? values[index]
       : expression.kind === 'variable' ? variables[expression.name]
         : expression.value
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -369,7 +374,7 @@ export function runArrayTraversal(
   }
 
   let iterationCount = 0
-  for (let index = initialIndex; index < selectedArray.values.length; index += 1) {
+  for (let index = initialIndex; index < values.length; index += 1) {
     iterationCount += 1
     if (iterationCount > maxIterations) return fail('step_limit', `This loop needs more than ${maxIterations} iterations; the current limit is ${maxIterations}.`, 1)
     const outcome = execute(body, index)

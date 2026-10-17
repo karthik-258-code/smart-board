@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ArrayObject } from '../domain/model'
+import type { ArrayObject, ContainerObject } from '../domain/model'
 import { binarySearchTemplate } from '../execution/smartScript'
 
 export type SmartScriptView = { source: string; arrayId: string; events: Array<{ cursor: number; line: number; variables: Record<string, number> }> }
@@ -8,23 +8,27 @@ const starterScript = 'for (let i = 0; i < values.length; i++) {\n  highlight(i)
 
 export function SmartScriptPanel({
   arrays,
+  containers,
   cursor,
   execution,
   onRun,
 }: {
   arrays: ArrayObject[]
+  containers: ContainerObject[]
   cursor: number
   execution: SmartScriptView | null
   onRun: (source: string, arrayId: string) => void
 }) {
   const [source, setSource] = useState(execution?.source ?? starterScript)
-  const [arrayId, setArrayId] = useState(execution?.arrayId ?? arrays[0]?.id ?? '')
+  const [arrayId, setArrayId] = useState(execution?.arrayId ?? arrays[0]?.id ?? containers[0]?.id ?? '')
   useEffect(() => {
     if (!execution) return
     setSource(execution.source)
     setArrayId(execution.arrayId)
   }, [execution])
-  const selectedArrayId = arrays.some((array) => array.id === arrayId) ? arrayId : arrays[0]?.id ?? ''
+  const hasSelectedTarget = arrays.some((array) => array.id === arrayId) || containers.some((container) => container.id === arrayId)
+  const selectedArrayId = hasSelectedTarget ? arrayId : arrays[0]?.id ?? containers[0]?.id ?? ''
+  const selectedContainer = containers.find((container) => container.id === selectedArrayId)
   const currentEvent = execution?.events.find((event) => event.cursor === cursor)
   const traceSource = execution?.source ?? source
   const binarySearchMode = /^\s*let\s+target\s*=/.test(traceSource)
@@ -33,16 +37,19 @@ export function SmartScriptPanel({
 
   return <section className="code-trace-panel smart-script-panel" role="region" aria-label="Smart Script runner">
     <div className="code-trace-heading">
-      <div><h2>Smart Script</h2><span>Safe subset · {binarySearchMode ? 'binary search' : 'array traversal'}</span></div>
+      <div><h2>Smart Script</h2><span>Safe subset · {binarySearchMode ? 'binary search' : selectedContainer ? `${selectedContainer.kind} traversal` : 'array traversal'}</span></div>
       <span className="code-trace-status">{status}</span>
     </div>
     <div className="smart-script-controls">
-      <label className="field-control">Array to visualize
-        <select aria-label="Array to visualize" value={selectedArrayId} disabled={arrays.length === 0} onChange={(event) => setArrayId(event.target.value)}>
-          {arrays.length === 0 ? <option value="">Add an array first</option> : arrays.map((array) => <option key={array.id} value={array.id}>Array: {array.values.join(', ') || 'empty'}</option>)}
+      <label className="field-control">Structure to visualize
+        <select aria-label="Structure to visualize" value={selectedArrayId} disabled={arrays.length + containers.length === 0} onChange={(event) => setArrayId(event.target.value)}>
+          {arrays.length + containers.length === 0 ? <option value="">Add an array, stack, or queue first</option> : <>
+            {arrays.map((array) => <option key={array.id} value={array.id}>Array: {array.values.join(', ') || 'empty'}</option>)}
+            {containers.map((container) => <option key={container.id} value={container.id}>{container.kind === 'stack' ? 'Stack' : 'Queue'}: {container.values.join(', ') || 'empty'}</option>)}
+          </>}
         </select>
       </label>
-      <button type="button" className="template-control" onClick={() => setSource(binarySearchTemplate)}>Use binary search template</button>
+      <button type="button" className="template-control" disabled={Boolean(selectedContainer)} onClick={() => setSource(binarySearchTemplate)}>Use binary search template</button>
       <button type="button" className="primary-control" disabled={!selectedArrayId} onClick={() => onRun(source, selectedArrayId)}>Run Smart Script</button>
     </div>
     <label className="smart-script-editor-label" htmlFor="smart-script-source">Source</label>

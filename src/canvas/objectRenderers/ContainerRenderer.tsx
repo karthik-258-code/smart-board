@@ -13,8 +13,9 @@ export function ContainerRenderer({ object }: { object: ContainerObject }) {
     {values.map((value, index) => {
       const x = isStack ? 15 : 20 + index * cellWidth
       const y = isStack ? 30 + index * cellHeight : 31
+      const valueIndex = isStack ? values.length - index - 1 : index
       return <g key={index}>
-        <rect className="container-cell" x={x} y={y} width={isStack ? 64 : cellWidth} height={cellHeight} />
+        <rect className={`container-cell${object.currentIndex === valueIndex ? ' container-cell-current' : ''}`} x={x} y={y} width={isStack ? 64 : cellWidth} height={cellHeight} />
         <text className="container-value" x={x + (isStack ? 32 : cellWidth / 2)} y={y + 25} textAnchor="middle">{String(value)}</text>
       </g>
     })}

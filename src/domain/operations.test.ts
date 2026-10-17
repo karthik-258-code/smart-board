@@ -119,6 +119,28 @@ describe('applyOperation', () => {
     if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
   })
 
+  it('sets and inverses the visible current item in a stack or queue', () => {
+    const document = board([stack])
+    const operation = { type: 'container/set-current-index', objectId: 'stack-1', index: 1 } as unknown as BoardOperation
+    const result = applyOperation(document, operation)
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [{ id: 'stack-1', currentIndex: 1 }] }, inverse: { type: 'container/set-current-index', objectId: 'stack-1' } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('keeps a queue highlight aligned after dequeue and restores it on undo', () => {
+    const document = board([{ ...queue, currentIndex: 1 }])
+    const result = applyOperation(document, { type: 'container/remove', objectId: 'queue-1' })
+
+    expect(result).toMatchObject({ ok: true, value: { document: { objects: [{ values: [8], currentIndex: 0 }] }, inverse: { type: 'container/restore-state', values: [3, 8], currentIndex: 1 } } })
+    if (result.ok) expect(applyOperation(result.value.document, result.value.inverse)).toMatchObject({ ok: true, value: { document } })
+  })
+
+  it('rejects a current item index outside the container', () => {
+    expect(applyOperation(board([stack]), { type: 'container/set-current-index', objectId: 'stack-1', index: 2 } as BoardOperation))
+      .toMatchObject({ ok: false, error: { code: 'invalid_index' } })
+  })
+
   it('inserts at the end and shifts highlighted indices, pointers, and ranges', () => {
     const document = board([
       { ...array, highlightedIndices: [1] },

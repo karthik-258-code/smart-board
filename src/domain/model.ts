@@ -46,7 +46,7 @@ export type TableObject = BaseObject & {
 }
 export type StrokeObject = BaseObject & { type: 'stroke'; points: BoardPosition[]; color: 'ink' }
 export type CheckpointObject = BaseObject & { type: 'checkpoint'; prompt: string; answer: string; hint: string }
-export type ContainerObject = BaseObject & { type: 'container'; kind: 'stack' | 'queue'; values: Array<string | number> }
+export type ContainerObject = BaseObject & { type: 'container'; kind: 'stack' | 'queue'; values: Array<string | number>; currentIndex?: number | null }
 export type LinkedListNode = { id: string; value: string | number; nextId: string | null }
 export type LinkedListObject = BaseObject & { type: 'linked-list'; nodes: LinkedListNode[] }
 export type GraphNode = { id: string; label: string; position: BoardPosition }

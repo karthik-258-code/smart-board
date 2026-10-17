@@ -16,7 +16,29 @@ function historyWithArray(values: Array<string | number>, withPointer = false) {
   return history
 }
 
+function historyWithContainer(values: Array<string | number>, kind: 'stack' | 'queue') {
+  let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
+  const added = dispatch(history, { type: 'object/add', object: { id: 'container-board', type: 'container', typeVersion: 1, position: { x: 0, y: 0 }, kind, values } })
+  if (!added.ok) throw new Error(added.error.message)
+  history = added.value
+  return history
+}
+
 describe('Smart Script array traversal', () => {
+  it('traverses a stack or queue and highlights the current contained value', () => {
+    const initial = historyWithContainer([4, 8, 12], 'queue')
+    const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', initial, 'container-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.events.map((event) => event.operation.type)).toEqual([
+        'container/set-current-index', 'container/set-current-index', 'container/set-current-index',
+      ])
+      const final = stateAt(result.value.history, result.value.history.cursor)
+      expect(final.ok && final.value.objects.find((object) => object.id === 'container-board')).toMatchObject({ currentIndex: 2 })
+    }
+  })
+
   it('steps through an explicit bounded loop and maps the index to array highlights', () => {
     const initial = historyWithArray([4, 8, 12])
     const result = runArrayTraversal('for (let i = 0; i < values.length; i++) {\n  highlight(i);\n}', initial, 'values-board')
