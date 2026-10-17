@@ -105,6 +105,10 @@ describe('history', () => {
 
     expect(validateHistory(state)).toEqual({ ok: true, value: state })
     expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 4, variables: { visitedCount: 1 }, inspection: { index: 1, value: 'M' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+
+    const numericState = dispatchOrThrow(state, { type: 'tree/set-highlighted', objectId: 'tree', nodeIds: ['left'] })
+    const numericExecution = { ...numericState, execution: { kind: 'smart-script' as const, source: inorderTraversalTemplate, arrayId: 'tree', events: [{ cursor: 3, line: 4, variables: { visitedCount: 1 }, inspection: { index: 1, value: 8 } }] } }
+    expect(validateHistory(numericExecution)).toMatchObject({ ok: true, value: { execution: { events: [{ inspection: { index: 1, value: 8 } }] } } })
   })
 
   it('rejects execution metadata outside the saved timeline', () => {

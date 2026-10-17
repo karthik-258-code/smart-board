@@ -645,8 +645,15 @@ export function runTreeTraversal(source: string, history: HistoryState, treeObje
   ]
   const normalizeTemplate = (value: string) => value.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).join('\n')
   const normalized = normalizeTemplate(source)
+  const sourceLines = normalized.split('\n')
   const selected = templates.find((template) => normalizeTemplate(template.source) === normalized)
-  if (!selected) return fail('unsupported_syntax', 'Use an unchanged preorder, inorder, or postorder template.', 1)
+  if (!selected) {
+    const candidate = templates.find((template) => normalizeTemplate(template.source).split('\n')[0] === sourceLines[0])
+    const expectedLines = candidate ? normalizeTemplate(candidate.source).split('\n') : []
+    const mismatch = expectedLines.findIndex((line, index) => line !== sourceLines[index])
+    const mismatchLine = mismatch >= 0 ? mismatch + 1 : sourceLines.length > expectedLines.length ? expectedLines.length + 1 : 1
+    return fail('unsupported_syntax', 'Use an unchanged preorder, inorder, or postorder template.', mismatchLine)
+  }
   const traversal = selected
 
   const current = stateAt(history, history.cursor)

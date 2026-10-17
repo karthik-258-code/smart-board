@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from '../domain/model'
-import { dispatch, stateAt, type HistoryState } from '../domain/history'
+import { dispatch, redo, stateAt, undo, type HistoryState } from '../domain/history'
 import { buildExampleHistory } from '../examples/catalog'
 import { breadthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runSmartScript, runTreeTraversal } from './smartScript'
 
@@ -369,6 +369,10 @@ describe('Smart Script binary-tree traversal', () => {
     expect(result.value.events.map((event) => event.line)).toEqual(Array(4).fill(visitLine))
     expect(result.value.events.map((event) => event.variables.visitedCount)).toEqual([1, 2, 3, 4])
     expect(stateAt(result.value.history, result.value.history.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: expectedIds })] } })
+    const previous = undo(result.value.history)
+    expect(stateAt(previous, previous.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: expectedIds.slice(0, -1) })] } })
+    const restored = redo(previous)
+    expect(stateAt(restored, restored.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: expectedIds })] } })
   })
 
   it('completes on empty tree and rejects edited templates', () => {
@@ -377,7 +381,8 @@ describe('Smart Script binary-tree traversal', () => {
     } })
     if (!empty.ok) throw new Error(empty.error.message)
     expect(runTreeTraversal(inorderTraversalTemplate, empty.value, 'tree-board')).toMatchObject({ ok: true, value: { events: [] } })
-    expect(runTreeTraversal(inorderTraversalTemplate.replace('node.left', 'node.right'), treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
+    expect(runTreeTraversal(inorderTraversalTemplate.replace('inorder(node.left)', 'inorder(node.right)'), treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 3 } })
+    expect(runTreeTraversal(`${inorderTraversalTemplate}\nunsafe();`, treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 8 } })
   })
 
   it('dispatches tree templates through the shared script runner', () => {
