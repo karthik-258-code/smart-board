@@ -91,6 +91,60 @@ describe('Smart Script array traversal', () => {
     expect(final.ok && final.value.objects.find((object) => object.id === 'pointer-i')).toMatchObject({ index: 1 })
   })
 
+  it('highlights declared pointer variables and moves matching board pointers', () => {
+    let initial = historyWithArray([4, 8, 12])
+    for (const [name, index] of [['left', 0], ['right', 2]] as const) {
+      const added = dispatch(initial, { type: 'object/add', object: { id: `pointer-${name}`, type: 'pointer', typeVersion: 1, position: { x: 0, y: -30 }, name, targetObjectId: 'values-board', index } })
+      if (!added.ok) throw new Error(added.error.message)
+      initial = added.value
+    }
+    const source = 'let left = 0;\nlet right = 2;\nfor (let i = 0; i < values.length; i++) {\n  left += 1;\n  highlight(left);\n  right += -1;\n  highlight(right);\n  if (i === 1) {\n    break;\n  }\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.filter((event) => event.operation.type === 'pointer/move').map((event) => [event.line, event.variables.left, event.variables.right])).toEqual([
+      [5, 1, 2], [7, 1, 1], [5, 2, 1], [7, 2, 0],
+    ])
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'pointer-left')).toMatchObject({ index: 2 })
+    expect(final.ok && final.value.objects.find((object) => object.id === 'pointer-right')).toMatchObject({ index: 0 })
+  })
+
+  it('does not move a pointer named after an unrelated accumulator', () => {
+    let initial = historyWithArray([2, 4])
+    const added = dispatch(initial, { type: 'object/add', object: { id: 'pointer-total', type: 'pointer', typeVersion: 1, position: { x: 0, y: -30 }, name: 'total', targetObjectId: 'values-board', index: 1 } })
+    if (!added.ok) throw new Error(added.error.message)
+    initial = added.value
+    const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.some((event) => event.operation.type === 'pointer/move')).toBe(false)
+    const final = stateAt(result.value.history, result.value.history.cursor)
+    expect(final.ok && final.value.objects.find((object) => object.id === 'pointer-total')).toMatchObject({ index: 1 })
+  })
+
+  it('reports an out-of-range highlighted variable on its source line', () => {
+    const initial = historyWithArray([4, 8])
+    const result = runArrayTraversal('let left = -1;\nfor (let i = 0; i < values.length; i++) {\n  highlight(left);\n}', initial, 'values-board')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 3 } })
+  })
+
+  it('rejects ambiguous named pointer mappings', () => {
+    let initial = historyWithArray([4, 8])
+    for (const id of ['pointer-left-a', 'pointer-left-b']) {
+      const added = dispatch(initial, { type: 'object/add', object: { id, type: 'pointer', typeVersion: 1, position: { x: 0, y: -30 }, name: 'left', targetObjectId: 'values-board', index: 0 } })
+      if (!added.ok) throw new Error(added.error.message)
+      initial = added.value
+    }
+    const result = runArrayTraversal('let left = 1;\nfor (let i = 0; i < values.length; i++) {\n  highlight(left);\n}', initial, 'values-board')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'ambiguous_mapping', line: 3 } })
+  })
+
   it('tracks a numeric accumulator and its snapshots while visiting array values', () => {
     const initial = historyWithArray([4, 8, 12])
     const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n  highlight(i);\n}'

@@ -112,7 +112,7 @@ type ScriptCondition =
   | { kind: 'comparison'; left: ScriptExpression; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptExpression }
   | { kind: 'logical'; operator: '&&' | '||'; left: ScriptCondition; right: ScriptCondition }
 type ScriptStatement =
-  | { kind: 'visit'; line: number }
+  | { kind: 'visit'; line: number; indexExpression: ScriptExpression; pointerName?: string }
   | { kind: 'loop-control'; line: number; control: 'break' | 'continue' }
   | { kind: 'accumulate'; line: number; variable: string; expression: ScriptExpression }
   | { kind: 'conditional'; line: number; condition: ScriptCondition; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
@@ -300,8 +300,12 @@ export function runArrayTraversal(
     const visit = /^\s*(?:highlight\(\s*([A-Za-z_$][\w$]*|values\s*\[\s*[A-Za-z_$][\w$]*\s*\])\s*\)|visit\(\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\])\s*\))\s*;\s*$/.exec(line)
     if (visit) {
       const argument = visit[1] ?? visit[2]
-      if (!parseExpression(argument)) return fail('unsupported_syntax', `Use highlight(${indexName}); or visit(values[${indexName}]);.`, sourceLine)
-      currentBlock.statements.push({ kind: 'visit', line: sourceLine })
+      const indexExpression = parseExpression(argument)
+      if (!indexExpression) return fail('unsupported_syntax', `Use highlight(${indexName});, highlight(a declared numeric variable);, or visit(values[${indexName}]);.`, sourceLine)
+      currentBlock.statements.push({
+        kind: 'visit', line: sourceLine, indexExpression,
+        pointerName: visit[1] && visit[1] !== indexName && Object.hasOwn(variables, visit[1]) ? visit[1] : undefined,
+      })
       statementCount += 1
       continue
     }
@@ -326,14 +330,15 @@ export function runArrayTraversal(
 
   const current = stateAt(history, history.cursor)
   if (!current.ok) return fail('invalid_history', current.error.message, 1)
-  const target = current.value.objects.find((object): object is ArrayObject | ContainerObject | LinkedListObject =>
+  const currentDocument = current.value
+  const target = currentDocument.objects.find((object): object is ArrayObject | ContainerObject | LinkedListObject =>
     object.id === arrayObjectId && (object.type === 'array' || object.type === 'container' || object.type === 'linked-list'),
   )
   if (!target) return fail('missing_array', 'Select an array, stack, queue, or linked list before running this script.', 1)
   const selectedTarget = target
   const values = selectedTarget.type === 'linked-list' ? selectedTarget.nodes.map((node) => node.value) : selectedTarget.values
 
-  const matchingPointers = selectedTarget.type === 'array' ? current.value.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
+  const matchingPointers = selectedTarget.type === 'array' ? currentDocument.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
     object.type === 'pointer' && object.targetObjectId === selectedTarget.id && object.name === indexName,
   ) : []
   if (matchingPointers.length > 1) return fail('ambiguous_mapping', `More than one pointer named ${indexName} targets this array. Rename or remove the duplicate pointer.`, 1)
@@ -341,14 +346,20 @@ export function runArrayTraversal(
   variables[indexName] = initialIndex
   let nextHistory = history
   const events: SmartScriptEvent[] = []
-  function applyStep(line: number, index: number): SmartScriptError | null {
+  function applyStep(line: number, index: number, mappedPointerName?: string): SmartScriptError | null {
     const snapshot = { ...variables }
+    const pointers = mappedPointerName
+      ? currentDocument.objects.filter((object): object is Extract<BoardObject, { type: 'pointer' }> =>
+        object.type === 'pointer' && object.targetObjectId === selectedTarget.id && object.name === mappedPointerName,
+      )
+      : pointer ? [pointer] : []
+    if (pointers.length > 1) return { code: 'ambiguous_mapping', message: `More than one pointer named ${mappedPointerName ?? indexName} targets this array. Rename or remove the duplicate pointer.`, line }
     const operations: BoardOperation[] = [selectedTarget.type === 'array'
       ? { type: 'array/set-highlight', objectId: selectedTarget.id, indices: [index] }
       : selectedTarget.type === 'container'
         ? { type: 'container/set-current-index', objectId: selectedTarget.id, index }
         : { type: 'linked-list/set-current-node', objectId: selectedTarget.id, nodeId: selectedTarget.nodes[index].id }]
-    if (pointer) operations.push({ type: 'pointer/move', objectId: pointer.id, index })
+    if (pointers[0]) operations.push({ type: 'pointer/move', objectId: pointers[0].id, index })
     for (const operation of operations) {
       if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line }
       const changed = dispatch(nextHistory, operation)
@@ -424,6 +435,19 @@ export function runArrayTraversal(
         const stepError = applyStep(statement.line, index)
         if (stepError) return stepError
         return statement.control
+      }
+
+      if (statement.kind === 'visit') {
+        const evaluatedIndex = statement.indexExpression.kind === 'array-value'
+          ? { value: index }
+          : evaluateExpression(statement.indexExpression, index, statement.line)
+        if ('error' in evaluatedIndex) return evaluatedIndex.error
+        if (!Number.isSafeInteger(evaluatedIndex.value) || evaluatedIndex.value < 0 || evaluatedIndex.value >= values.length) {
+          return { code: 'unsupported_input', message: 'The highlighted index must be an integer inside the selected structure.', line: statement.line }
+        }
+        const stepError = applyStep(statement.line, evaluatedIndex.value, statement.pointerName)
+        if (stepError) return stepError
+        continue
       }
 
       if (statement.kind === 'accumulate') {
