@@ -506,6 +506,9 @@ describe('Smart Board app shell', () => {
     render(<App />)
     expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(graphId)
     expect(screen.getByText('Safe subset · graph depth-first search')).toBeInTheDocument()
+    expect(screen.getByText('visitedCount = 4')).toBeInTheDocument()
+    expect(screen.getByText('stackLength = 1')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting index 1 · value B')).toBeInTheDocument()
   })
 
   it('loads a replayable algorithm example and persists its history', () => {

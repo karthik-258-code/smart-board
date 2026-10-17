@@ -49,4 +49,4 @@
 - [x] Add DFS template control and mode label.
 - [x] Verify graph target, run, timeline, and persistence behavior.
 - [x] Update roadmap documentation.
-- [x] Run full tests (243 passing), production build, lint, and `git diff --check`; commit and push milestone.
+- [x] Run full tests (244 passing with one worker), production build, lint, and `git diff --check`; commit and push milestone.

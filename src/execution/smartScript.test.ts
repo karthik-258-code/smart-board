@@ -370,6 +370,19 @@ describe('Smart Script graph breadth-first search', () => {
     expect(runGraphDepthFirstSearch(depthFirstSearchTemplate.replace('stack.pop()', 'stack.shift()'), initial, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
     expect(runGraphDepthFirstSearch(depthFirstSearchTemplate.replace('"A"', '"Z"'), initial, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 1 } })
     expect(runSmartScript(depthFirstSearchTemplate, initial, 'graph-board').ok).toBe(true)
+    const ambiguous = graphHistory([{ id: 'a', label: 'A' }, { id: 'b', label: 'A' }], [])
+    expect(runGraphDepthFirstSearch(depthFirstSearchTemplate, ambiguous, 'graph-board')).toMatchObject({ ok: false, error: { code: 'ambiguous_mapping', line: 1 } })
+    expect(runGraphDepthFirstSearch(`${depthFirstSearchTemplate}\nunsafe();`, initial, 'graph-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 16 } })
+  })
+
+  it('accepts start labels containing replacement-token sequences', () => {
+    const label = "$&$'$`"
+    const initial = graphHistory([{ id: 'special', label }], [])
+    const source = depthFirstSearchTemplate.replace('"A"', () => JSON.stringify(label))
+    const result = runGraphDepthFirstSearch(source, initial, 'graph-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events[0]?.inspection?.value).toBe(label)
   })
 })
 

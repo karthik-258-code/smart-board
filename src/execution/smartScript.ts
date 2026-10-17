@@ -668,7 +668,10 @@ export function runGraphDepthFirstSearch(source: string, history: HistoryState, 
   if (typeof startLabel !== 'string') return fail('unsupported_input', 'The start label must be a string.', 1)
   const expectedLines = depthFirstSearchTemplate.replace('let start = "A";', () => `let start = ${JSON.stringify(startLabel)};`).replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())
   const mismatch = expectedLines.findIndex((line, index) => line !== lines[index])
-  if (mismatch !== -1 || lines.length !== expectedLines.length) return fail('unsupported_syntax', 'Use the Depth-first Search template without changing its algorithm.', Math.max(1, mismatch + 1))
+  if (mismatch !== -1 || lines.length !== expectedLines.length) {
+    const mismatchLine = mismatch >= 0 ? mismatch + 1 : lines.length > expectedLines.length ? expectedLines.length + 1 : 1
+    return fail('unsupported_syntax', 'Use the Depth-first Search template without changing its algorithm.', mismatchLine)
+  }
 
   const current = stateAt(history, history.cursor)
   if (!current.ok) return fail('invalid_history', current.error.message, 1)
