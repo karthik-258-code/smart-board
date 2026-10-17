@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from './model'
 import { dispatch, redo, stateAt, undo, validateHistory, type HistoryState } from './history'
+import { inorderTraversalTemplate } from '../execution/smartScript'
 
 const initial = createEmptyBoard('board-1')
 const add = (id: string, text: string) => ({
@@ -88,6 +89,22 @@ describe('history', () => {
     expect(validateHistory(state)).toEqual({ ok: true, value: state })
     expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 8, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 1, value: 'A' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
     expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 8, variables: { visitedCount: 1, queueLength: 0 }, inspection: { index: 0, value: 'B' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
+  })
+
+  it('validates tree traversal inspections against saved node values and indices', () => {
+    let state: HistoryState = { initialDocument: initial, entries: [], cursor: 0 }
+    state = dispatchOrThrow(state, { type: 'object/add', object: {
+      id: 'tree', type: 'binary-tree', typeVersion: 1, position: { x: 0, y: 0 }, rootId: 'root', highlightedNodeIds: [],
+      nodes: [
+        { id: 'root', value: 'M', leftId: 'left', rightId: null, position: { x: 0, y: 0 } },
+        { id: 'left', value: 8, leftId: null, rightId: null, position: { x: 0, y: 80 } },
+      ],
+    } })
+    state = dispatchOrThrow(state, { type: 'tree/set-highlighted', objectId: 'tree', nodeIds: ['root'] })
+    state = { ...state, execution: { kind: 'smart-script', source: inorderTraversalTemplate, arrayId: 'tree', events: [{ cursor: 2, line: 4, variables: { visitedCount: 1 }, inspection: { index: 0, value: 'M' } }] } }
+
+    expect(validateHistory(state)).toEqual({ ok: true, value: state })
+    expect(validateHistory({ ...state, execution: { ...state.execution, events: [{ cursor: 2, line: 4, variables: { visitedCount: 1 }, inspection: { index: 1, value: 'M' } }] } })).toMatchObject({ ok: false, error: { code: 'invalid_history' } })
   })
 
   it('rejects execution metadata outside the saved timeline', () => {

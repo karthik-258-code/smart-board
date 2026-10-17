@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyBoard } from '../domain/model'
 import { dispatch, stateAt, type HistoryState } from '../domain/history'
 import { buildExampleHistory } from '../examples/catalog'
-import { breadthFirstSearchTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runSmartScript } from './smartScript'
+import { breadthFirstSearchTemplate, inorderTraversalTemplate, postorderTraversalTemplate, preorderTraversalTemplate, runArrayTraversal, runBinarySearch, runGraphBreadthFirstSearch, runSmartScript, runTreeTraversal } from './smartScript'
 
 function historyWithArray(values: Array<string | number>, withPointer = false) {
   let history: HistoryState = { initialDocument: createEmptyBoard('script-test'), entries: [], cursor: 0 }
@@ -337,5 +337,50 @@ describe('Smart Script graph breadth-first search', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.events[0]?.inspection?.value).toBe(label)
+  })
+})
+
+describe('Smart Script binary-tree traversal', () => {
+  function treeHistory(): HistoryState {
+    const tree = {
+      id: 'tree-board', type: 'binary-tree' as const, typeVersion: 1 as const, position: { x: 0, y: 0 }, rootId: 'root', highlightedNodeIds: [],
+      nodes: [
+        { id: 'root', value: 'M', leftId: 'left', rightId: 'right', position: { x: 100, y: 0 } },
+        { id: 'left', value: 8, leftId: 'left-right', rightId: null, position: { x: 0, y: 100 } },
+        { id: 'right', value: 'Z', leftId: null, rightId: null, position: { x: 200, y: 100 } },
+        { id: 'left-right', value: 3, leftId: null, rightId: null, position: { x: 50, y: 200 } },
+      ],
+    }
+    const result = dispatch({ initialDocument: createEmptyBoard('tree-script-test'), entries: [], cursor: 0 }, { type: 'object/add', object: tree })
+    if (!result.ok) throw new Error(result.error.message)
+    return result.value
+  }
+
+  it.each([
+    [preorderTraversalTemplate, ['M', 8, 3, 'Z'], 3, ['root', 'left', 'left-right', 'right']],
+    [inorderTraversalTemplate, [3, 8, 'M', 'Z'], 4, ['left-right', 'left', 'root', 'right']],
+    [postorderTraversalTemplate, [3, 8, 'Z', 'M'], 5, ['left-right', 'left', 'right', 'root']],
+  ])('visits nodes in expected order', (source, expected, visitLine, expectedIds) => {
+    const result = runTreeTraversal(source, treeHistory(), 'tree-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.map((event) => event.inspection?.value)).toEqual(expected)
+    expect(result.value.events.map((event) => event.line)).toEqual(Array(4).fill(visitLine))
+    expect(result.value.events.map((event) => event.variables.visitedCount)).toEqual([1, 2, 3, 4])
+    expect(stateAt(result.value.history, result.value.history.cursor)).toMatchObject({ ok: true, value: { objects: [expect.objectContaining({ highlightedNodeIds: expectedIds })] } })
+  })
+
+  it('completes on empty tree and rejects edited templates', () => {
+    const empty = dispatch({ initialDocument: createEmptyBoard('tree-script-empty'), entries: [], cursor: 0 }, { type: 'object/add', object: {
+      id: 'tree-board', type: 'binary-tree', typeVersion: 1, position: { x: 0, y: 0 }, rootId: null, nodes: [], highlightedNodeIds: [],
+    } })
+    if (!empty.ok) throw new Error(empty.error.message)
+    expect(runTreeTraversal(inorderTraversalTemplate, empty.value, 'tree-board')).toMatchObject({ ok: true, value: { events: [] } })
+    expect(runTreeTraversal(inorderTraversalTemplate.replace('node.left', 'node.right'), treeHistory(), 'tree-board')).toMatchObject({ ok: false, error: { code: 'unsupported_syntax' } })
+  })
+
+  it('dispatches tree templates through the shared script runner', () => {
+    expect(runSmartScript(inorderTraversalTemplate, treeHistory(), 'tree-board').ok).toBe(true)
   })
 })

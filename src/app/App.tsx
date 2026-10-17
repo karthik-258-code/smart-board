@@ -100,6 +100,7 @@ function App() {
   const containers = board.objects.filter((object): object is Extract<BoardObject, { type: 'container' }> => object.type === 'container')
   const linkedLists = board.objects.filter((object): object is Extract<BoardObject, { type: 'linked-list' }> => object.type === 'linked-list')
   const graphs = board.objects.filter((object): object is Extract<BoardObject, { type: 'graph' }> => object.type === 'graph')
+  const trees = board.objects.filter((object): object is Extract<BoardObject, { type: 'binary-tree' }> => object.type === 'binary-tree')
   const selectedObject = board.objects.find((object) => object.id === selectedId) ?? null
   const practiceObject = board.objects.find((object) => object.id === practiceId)
   const practiceCheckpoint = practiceObject?.type === 'checkpoint' ? practiceObject : null
@@ -432,7 +433,7 @@ function App() {
       </div>
 
       {traceState && <CodeTracePanel trace={traceState.trace} currentLine={traceState.currentLine} />}
-      <SmartScriptPanel arrays={arrays} containers={containers} linkedLists={linkedLists} graphs={graphs} cursor={history.cursor} execution={codeExecution} onRun={runScript} />
+      <SmartScriptPanel arrays={arrays} containers={containers} linkedLists={linkedLists} graphs={graphs} trees={trees} cursor={history.cursor} execution={codeExecution} onRun={runScript} />
 
       <div className="workspace-layout">
         <BoardToolbar onAdd={addObject} selectedArray={selectedArray} drawingMode={drawingMode} onToggleDrawing={() => setDrawingMode((value) => !value)} onLoadExample={loadExample} />

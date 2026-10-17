@@ -1,6 +1,6 @@
 import type { HistoryState } from '../domain/history'
 import { dispatch, stateAt } from '../domain/history'
-import type { ArrayObject, BoardObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
+import type { ArrayObject, BinaryTreeObject, BoardObject, ContainerObject, GraphObject, LinkedListObject } from '../domain/model'
 import type { BoardOperation } from '../domain/operations'
 import type { Result } from '../domain/result'
 
@@ -45,6 +45,36 @@ export const breadthFirstSearchTemplate = [
   '    }',
   '  }',
   '}',
+].join('\n')
+
+export const preorderTraversalTemplate = [
+  'function preorder(node) {',
+  '  if (node === null) return;',
+  '  highlight(node);',
+  '  preorder(node.left);',
+  '  preorder(node.right);',
+  '}',
+  'preorder(tree.root);',
+].join('\n')
+
+export const inorderTraversalTemplate = [
+  'function inorder(node) {',
+  '  if (node === null) return;',
+  '  inorder(node.left);',
+  '  highlight(node);',
+  '  inorder(node.right);',
+  '}',
+  'inorder(tree.root);',
+].join('\n')
+
+export const postorderTraversalTemplate = [
+  'function postorder(node) {',
+  '  if (node === null) return;',
+  '  postorder(node.left);',
+  '  postorder(node.right);',
+  '  highlight(node);',
+  '}',
+  'postorder(tree.root);',
 ].join('\n')
 
 function fail(code: SmartScriptError['code'], message: string, line: number): Result<never, SmartScriptError> {
@@ -606,8 +636,76 @@ export function runGraphBreadthFirstSearch(source: string, history: HistoryState
   return { ok: true, value: { history: nextHistory, events, arrayName: 'graph', indexName: 'current' } }
 }
 
+export function runTreeTraversal(source: string, history: HistoryState, treeObjectId: string): Result<SmartScriptRun, SmartScriptError> {
+  if (source.length > HARD_SOURCE_LENGTH_LIMIT) return fail('step_limit', `Source cannot exceed ${HARD_SOURCE_LENGTH_LIMIT} characters.`, 1)
+  const templates = [
+    { source: preorderTraversalTemplate, order: 'preorder' as const, visitLine: 3 },
+    { source: inorderTraversalTemplate, order: 'inorder' as const, visitLine: 4 },
+    { source: postorderTraversalTemplate, order: 'postorder' as const, visitLine: 5 },
+  ]
+  const normalizeTemplate = (value: string) => value.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).join('\n')
+  const normalized = normalizeTemplate(source)
+  const selected = templates.find((template) => normalizeTemplate(template.source) === normalized)
+  if (!selected) return fail('unsupported_syntax', 'Use an unchanged preorder, inorder, or postorder template.', 1)
+  const traversal = selected
+
+  const current = stateAt(history, history.cursor)
+  if (!current.ok) return fail('invalid_history', current.error.message, 1)
+  const tree = current.value.objects.find((object): object is BinaryTreeObject => object.id === treeObjectId && object.type === 'binary-tree')
+  if (!tree) return fail('missing_array', 'Select a binary tree before running this script.', 1)
+  const targetTree = tree
+
+  const nodesById = new Map(targetTree.nodes.map((node) => [node.id, node]))
+  const visited: string[] = []
+  let nextHistory = history
+  const events: SmartScriptEvent[] = []
+  function visit(nodeId: string | null): SmartScriptError | null {
+    if (!nodeId) return null
+    const node = nodesById.get(nodeId)
+    if (!node) return { code: 'invalid_history', message: 'The tree changed while the script was running.', line: traversal.visitLine }
+    if (traversal.order === 'preorder') {
+      const error = record(nodeId)
+      if (error) return error
+    }
+    const left = visit(node.leftId)
+    if (left) return left
+    if (traversal.order === 'inorder') {
+      const error = record(nodeId)
+      if (error) return error
+    }
+    const right = visit(node.rightId)
+    if (right) return right
+    if (traversal.order === 'postorder') {
+      const error = record(nodeId)
+      if (error) return error
+    }
+    return null
+  }
+  function record(nodeId: string): SmartScriptError | null {
+    const node = nodesById.get(nodeId)
+    if (!node) return { code: 'invalid_history', message: 'The tree changed while the script was running.', line: traversal.visitLine }
+    if (events.length >= HARD_EVENT_LIMIT) return { code: 'step_limit', message: `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, line: traversal.visitLine }
+    visited.push(nodeId)
+    const operation: BoardOperation = { type: 'tree/set-highlighted', objectId: targetTree.id, nodeIds: [...visited] }
+    const changed = dispatch(nextHistory, operation)
+    if (!changed.ok) return { code: 'invalid_history', message: changed.error.message, line: traversal.visitLine }
+    nextHistory = changed.value
+    events.push({
+      line: traversal.visitLine,
+      variables: { visitedCount: visited.length },
+      inspection: { index: targetTree.nodes.findIndex((candidate) => candidate.id === nodeId), value: node.value },
+      operation,
+    })
+    return null
+  }
+  const traversalError = visit(targetTree.rootId)
+  if (traversalError) return { ok: false, error: traversalError }
+  return { ok: true, value: { history: nextHistory, events, arrayName: 'tree', indexName: 'node' } }
+}
+
 export function runSmartScript(source: string, history: HistoryState, arrayObjectId: string): Result<SmartScriptRun, SmartScriptError> {
   if (/^\s*let\s+target\s*=/.test(source)) return runBinarySearch(source, history, arrayObjectId)
   if (/^\s*let\s+start\s*=\s*["']/.test(source)) return runGraphBreadthFirstSearch(source, history, arrayObjectId)
+  if (/^\s*function\s+(preorder|inorder|postorder)\s*\(/.test(source)) return runTreeTraversal(source, history, arrayObjectId)
   return runArrayTraversal(source, history, arrayObjectId)
 }

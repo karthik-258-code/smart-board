@@ -4,7 +4,7 @@
 
 Smart Board is envisioned as a teaching and presentation environment where an explanation can be built from data structures, pointers, ranges, annotations, and execution state. Instead of drawing a new diagram for every algorithm, users compose reusable visual primitives and connect them to code when useful.
 
-> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files and share links, DP tables, freehand drawing, practice checkpoints, stacks, queues, and a bounded array-script runner are implemented. Current features and remaining roadmap are listed below.
+> **Project status:** Manual board, indexed arrays, linked lists, editable graphs, binary trees, heaps, hash tables, tries, guided lessons, timeline playback, local persistence, portable board files and share links, DP tables, freehand drawing, practice checkpoints, stacks, queues, and bounded Smart Script interpreters are implemented. Current features and remaining roadmap are listed below.
 
 ## Run locally
 
@@ -295,7 +295,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, queue, and linked-list traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus fixed binary-search and graph breadth-first search templates. Traversal snapshots include the inspected index and value alongside script variables. Remaining work: broader control flow and additional tree and structure mappings.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes bounded array, stack, queue, and linked-list traversal with arithmetic expressions, compound conditions, `break`, and `continue`, plus fixed binary-search, graph breadth-first, and binary-tree preorder, inorder, and postorder templates. Traversal snapshots include the inspected index and value alongside script variables. Remaining work: broader variable synchronization and additional structure mappings.
 
 ### Phase 6: Persist and share
 

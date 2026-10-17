@@ -473,6 +473,22 @@ describe('Smart Board app shell', () => {
     expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(listId)
   })
 
+  it('runs and restores an inorder Smart Script trace over a binary tree', () => {
+    const view = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add binary tree' }))
+    const treeId = savedBoard().objects.find((object: BoardObject) => object.type === 'binary-tree')?.id
+    fireEvent.change(screen.getByRole('combobox', { name: 'Structure to visualize' }), { target: { value: treeId } })
+    fireEvent.click(screen.getByRole('button', { name: 'Use inorder traversal template' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('Inspecting index 6 · value 14')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').history.execution).toMatchObject({ arrayId: treeId })
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Structure to visualize' })).toHaveValue(treeId)
+    expect(screen.getByText('Inspecting index 6 · value 14')).toBeInTheDocument()
+  })
+
   it('loads a replayable algorithm example and persists its history', () => {
     render(<App />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Algorithm example' }), { target: { value: 'array-traversal' } })

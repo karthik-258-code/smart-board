@@ -101,6 +101,22 @@ while (queue.length > 0) {
 
 The start label must identify one graph node. Edges are undirected; neighbor order follows stored edge order. The interpreter highlights reachable nodes once in FIFO order. Disconnected nodes stay unhighlighted. Each visit snapshot reports the graph node index and label, `visitedCount`, and remaining `queueLength`. The template is validated and never evaluated as JavaScript.
 
+### Binary-tree depth-first traversal
+
+The panel provides fixed preorder, inorder, and postorder templates for binary trees:
+
+```ts
+function inorder(node) {
+  if (node === null) return;
+  inorder(node.left);
+  highlight(node);
+  inorder(node.right);
+}
+inorder(tree.root);
+```
+
+Only the three built-in templates run. Each visit creates one reversible tree highlight operation and one snapshot with the node's saved tree index, value, and `visitedCount`. Child links determine traversal order; empty trees complete with no events. Source is validated and never evaluated as JavaScript.
+
 ## Execution and history
 
 The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; traversal events also record the inspected index and value, and the editor displays these at the current history cursor. The binary-search template exposes its inspected value, index, and comparison through its variable snapshot. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
@@ -109,4 +125,4 @@ The source is limited to 10,000 characters, arithmetic expressions to 256 tokens
 
 ## Explicit limits
 
-The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions, input/output, asynchronous code, or traversal of trees, heaps, hash tables, or tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search and graph BFS control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph BFS reports visit count, queue length, and current node. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary JavaScript expressions, loops inside traversal bodies, user-defined functions beyond the three fixed tree templates, input/output, asynchronous code, or traversal of heaps, hash tables, and tries. Arithmetic expressions are limited to 256 tokens and 32 nested parentheses. Binary-search, graph BFS, and tree traversal control flow are fixed to their templates. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. Graph BFS reports visit count, queue length, and current node. Tree traversal reports visit count and current node. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.

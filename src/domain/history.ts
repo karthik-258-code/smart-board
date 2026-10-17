@@ -61,10 +61,11 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
     || typeof value.source !== 'string' || value.source.length > 10_000 || typeof value.arrayId !== 'string' || !value.arrayId
     || !Array.isArray(value.events) || value.events.length > 5_000) return invalidHistory('Saved script execution metadata is malformed.')
 
-  const target = document.objects.find((object) => object.id === value.arrayId && (object.type === 'array' || object.type === 'container' || object.type === 'linked-list' || object.type === 'graph'))
-  if (!target) return invalidHistory('Saved script execution must map to an array, stack, queue, linked list, or graph in the board.')
+  const target = document.objects.find((object) => object.id === value.arrayId && (object.type === 'array' || object.type === 'container' || object.type === 'linked-list' || object.type === 'graph' || object.type === 'binary-tree'))
+  if (!target) return invalidHistory('Saved script execution must map to an array, stack, queue, linked list, graph, or binary tree in the board.')
   if (/^\s*let\s+target\s*=/.test(value.source) && target.type !== 'array') return invalidHistory('Binary-search execution must map to an array.')
   if (/^\s*let\s+start\s*=\s*["']/.test(value.source) ? target.type !== 'graph' : target.type === 'graph') return invalidHistory('Graph breadth-first execution must map to a graph.')
+  if (/^\s*function\s+(preorder|inorder|postorder)\s*\(/.test(value.source) ? target.type !== 'binary-tree' : target.type === 'binary-tree') return invalidHistory('Binary-tree traversal execution must map to a binary tree.')
   const lines = value.source.replace(/\r\n?/g, '\n').split('\n').length
   let previousCursor = 0
   const events: SavedExecutionEvent[] = []
@@ -83,7 +84,7 @@ function validateExecution(value: unknown, entryCount: number, document: BoardDo
     }
     let inspection: SavedExecutionEvent['inspection']
     if (event.inspection !== undefined) {
-      const values = target.type === 'linked-list' ? target.nodes.map((node) => node.value)
+      const values = target.type === 'linked-list' || target.type === 'binary-tree' ? target.nodes.map((node) => node.value)
         : target.type === 'graph' ? target.nodes.map((node) => node.label)
         : target.type === 'array' || target.type === 'container' ? target.values : []
       if (!isRecord(event.inspection) || !hasOnlyKeys(event.inspection, ['index', 'value'])
