@@ -55,4 +55,4 @@
 - [x] Verify built-in BFS graph trace persistence.
 - [x] Run the graph BFS flow in a clean local browser session.
 - [x] Update Smart Script docs and README roadmap status.
-- [ ] Run full tests, build, lint, and `git diff --check`; commit and push milestone.
+- [x] Run full tests (230 passing), production build, lint, and `git diff --check`; commit and push milestone (`65ae87a`).
