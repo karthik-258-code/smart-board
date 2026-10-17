@@ -56,6 +56,6 @@ export function SmartScriptPanel({
       <span>Variables</span>
       {currentEvent ? Object.entries(currentEvent.variables).map(([name, value]) => <code key={name}>{name} = {value}</code>) : <span>No runtime snapshot at this step</span>}
     </div>
-    <p className="smart-script-help">Supported: array traversal with numeric accumulators, arithmetic expressions, and <code>if/else</code> conditions, or the binary-search template. Traversal maps a matching index pointer; binary search maps a <code>mid</code> pointer and a range named <code>search</code>. Other code is rejected; scripts are never evaluated as JavaScript.</p>
+    <p className="smart-script-help">Supported: array traversal with numeric accumulators, arithmetic expressions, nested <code>if/else</code>, <code>break</code>, and <code>continue</code>, or the binary-search template. Traversal maps a matching index pointer; binary search maps a <code>mid</code> pointer and a range named <code>search</code>. Other code is rejected; scripts are never evaluated as JavaScript.</p>
   </section>
 }

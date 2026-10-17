@@ -46,6 +46,7 @@ type ScriptExpression =
   | { kind: 'binary'; operator: '+' | '-' | '*' | '/' | '%'; left: ScriptExpression; right: ScriptExpression }
 type ScriptStatement =
   | { kind: 'visit'; line: number }
+  | { kind: 'loop-control'; line: number; control: 'break' | 'continue' }
   | { kind: 'accumulate'; line: number; variable: string; expression: ScriptExpression }
   | { kind: 'conditional'; line: number; left: ScriptExpression; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptExpression; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
 
@@ -204,6 +205,11 @@ export function runArrayTraversal(
       statementCount += 1
       continue
     }
+    if (line === 'break;' || line === 'continue;') {
+      currentBlock.statements.push({ kind: 'loop-control', line: sourceLine, control: line.slice(0, -1) as 'break' | 'continue' })
+      statementCount += 1
+      continue
+    }
     const assignment = /^([A-Za-z_$][\w$]*)\s*\+=\s*(.*?)\s*;$/.exec(line)
     if (assignment && isSafeIdentifier(assignment[1]) && Object.hasOwn(variables, assignment[1])) {
       const expression = parseExpression(assignment[2])
@@ -230,10 +236,6 @@ export function runArrayTraversal(
   if (matchingPointers.length > 1) return fail('ambiguous_mapping', `More than one pointer named ${indexName} targets this array. Rename or remove the duplicate pointer.`, 1)
   const pointer = matchingPointers[0]
   variables[indexName] = initialIndex
-  const iterationCount = Math.max(0, selectedArray.values.length - initialIndex)
-  if (iterationCount > maxIterations) return fail('step_limit', `This loop needs ${iterationCount} iterations; the current limit is ${maxIterations}.`, 1)
-  if (iterationCount * statementCount * (pointer ? 2 : 1) > HARD_EVENT_LIMIT) return fail('step_limit', `This script would create more than ${HARD_EVENT_LIMIT} timeline events.`, 1)
-
   let nextHistory = history
   const events: SmartScriptEvent[] = []
   function applyStep(line: number, index: number): SmartScriptError | null {
@@ -277,7 +279,7 @@ export function runArrayTraversal(
     return { value }
   }
 
-  function execute(statements: ScriptStatement[], index: number): SmartScriptError | null {
+  function execute(statements: ScriptStatement[], index: number): SmartScriptError | 'break' | 'continue' | null {
     for (const statement of statements) {
       variables[indexName] = index
       if (statement.kind === 'conditional') {
@@ -299,6 +301,12 @@ export function runArrayTraversal(
         continue
       }
 
+      if (statement.kind === 'loop-control') {
+        const stepError = applyStep(statement.line, index)
+        if (stepError) return stepError
+        return statement.control
+      }
+
       if (statement.kind === 'accumulate') {
         const operand = evaluateExpression(statement.expression, index, statement.line)
         if ('error' in operand) return operand.error
@@ -312,9 +320,14 @@ export function runArrayTraversal(
     return null
   }
 
+  let iterationCount = 0
   for (let index = initialIndex; index < selectedArray.values.length; index += 1) {
-    const error = execute(body, index)
-    if (error) return { ok: false, error }
+    iterationCount += 1
+    if (iterationCount > maxIterations) return fail('step_limit', `This loop needs more than ${maxIterations} iterations; the current limit is ${maxIterations}.`, 1)
+    const outcome = execute(body, index)
+    if (outcome === 'break') break
+    if (outcome === 'continue') continue
+    if (outcome) return { ok: false, error: outcome }
   }
 
   return { ok: true, value: { history: nextHistory, events, arrayName, indexName } }

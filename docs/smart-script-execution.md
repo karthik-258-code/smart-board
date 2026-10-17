@@ -26,7 +26,7 @@ Each statement highlights the current array cell. If the selected array has one 
 
 Before the loop, scripts may declare unique integer variables such as `let total = 0;`. Accumulator statements update those variables and each timeline snapshot shows their values. Array accumulators require numeric values. Since the current visualization is an array, accumulator statements also highlight the value being read.
 
-Traversal bodies also support nested numeric `if/else` blocks and arithmetic expressions. Expressions can use `values[i]`, the loop index, declared numeric variables, and numeric literals with unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, and parentheses. Multiplication, division, and remainder bind before addition and subtraction. Conditions compare two expressions with `<`, `<=`, `>`, `>=`, `===`, or `!==`. Each executed condition and branch statement becomes a timeline step. Division or remainder by zero is reported with a source-line diagnostic. For example:
+Traversal bodies also support nested numeric `if/else` blocks, arithmetic expressions, and `break;` / `continue;` statements, including inside conditional branches. `break` exits the array loop; `continue` skips the remaining statements for the current value. Both are visible timeline steps. Expressions can use `values[i]`, the loop index, declared numeric variables, and numeric literals with unary `+`/`-`, `+`, `-`, `*`, `/`, `%`, and parentheses. Multiplication, division, and remainder bind before addition and subtraction. Conditions compare two expressions with `<`, `<=`, `>`, `>=`, `===`, or `!==`. Each executed condition and branch statement becomes a timeline step. Division or remainder by zero is reported with a source-line diagnostic. For example:
 
 ```ts
 let positive = 0;
@@ -36,6 +36,20 @@ for (let i = 0; i < values.length; i++) {
     weightedTotal += values[i] * 2 + i;
   } else {
     skipped += 1;
+  }
+  highlight(i);
+}
+```
+
+Loop control can also stop early or skip a value:
+
+```ts
+for (let i = 0; i < values.length; i++) {
+  if (values[i] < 0) {
+    continue;
+  }
+  if (values[i] === target) {
+    break;
   }
   highlight(i);
 }
@@ -69,7 +83,7 @@ The selected array must contain finite numeric values sorted in ascending order.
 
 The interpreter emits board operations and applies them through the normal history dispatcher. Highlights and pointer moves can be stepped backward or forward with the board timeline. Each event carries its source line and variable snapshot; the editor highlights the active line and displays the snapshot at the current history cursor. Running a script branches from the current history cursor, following the same behavior as other board edits. Script source and cursor mappings are validated with the board history, then persist with local saves and exported board files. A new manual board operation clears the trace so the code view cannot imply that it controls diverged state.
 
-The source is limited to 10,000 characters, the loop to 1,000 iterations, and its body to 100 supported statements. A run may create at most 5,000 timeline events. These limits apply before the interpreter dispatches any operation. An empty array yields no execution events.
+The source is limited to 10,000 characters, the loop to 1,000 executed iterations, and its body to 100 supported statements. A run may create at most 5,000 timeline events. These limits are enforced before returning a run; failed runs do not expose partial history. An empty array yields no execution events.
 
 ## Explicit limits
 

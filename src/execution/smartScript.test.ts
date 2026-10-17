@@ -94,6 +94,30 @@ describe('Smart Script array traversal', () => {
     expect(initial.cursor).toBe(1)
   })
 
+  it('breaks out of the traversal when a nested branch matches', () => {
+    const initial = historyWithArray([1, 2, 3, 4])
+    const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] === 3) {\n    break;\n  }\n  total += values[i];\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.events.at(-1)?.variables).toEqual({ total: 3, i: 2 })
+      expect(result.value.events.filter((event) => event.operation.type === 'array/set-highlight').map((event) => event.variables.i)).toEqual([0, 0, 1, 1, 2, 2])
+    }
+  })
+
+  it('continues to the next iteration when a nested branch matches', () => {
+    const initial = historyWithArray([1, 2, 3])
+    const source = 'let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] === 2) {\n    continue;\n  }\n  total += values[i];\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.events.at(-1)?.variables).toEqual({ total: 4, i: 2 })
+      expect(result.value.events.filter((event) => event.line === 6).map((event) => event.variables.i)).toEqual([0, 2])
+    }
+  })
+
   it('rejects unsupported code with a source-line diagnostic without changing history', () => {
     const initial = historyWithArray([1])
     const result = runArrayTraversal('while (true) { process.exit(); }', initial, 'values-board')
