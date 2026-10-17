@@ -39,11 +39,15 @@ function isSafeIdentifier(value: string): boolean {
   return /^[A-Za-z_$][\w$]*$/.test(value) && !['__proto__', 'prototype', 'constructor'].includes(value)
 }
 
-type ScriptOperand = { kind: 'array-value' } | { kind: 'variable'; name: string } | { kind: 'number'; value: number }
+type ScriptExpression =
+  | { kind: 'array-value' }
+  | { kind: 'variable'; name: string }
+  | { kind: 'number'; value: number }
+  | { kind: 'binary'; operator: '+' | '-' | '*' | '/' | '%'; left: ScriptExpression; right: ScriptExpression }
 type ScriptStatement =
   | { kind: 'visit'; line: number }
-  | { kind: 'accumulate'; line: number; variable: string; operand: ScriptOperand }
-  | { kind: 'conditional'; line: number; left: ScriptOperand; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptOperand; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
+  | { kind: 'accumulate'; line: number; variable: string; expression: ScriptExpression }
+  | { kind: 'conditional'; line: number; left: ScriptExpression; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptExpression; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
 
 /** Executes a deliberately small, non-evaluating Smart Script subset. */
 export function runArrayTraversal(
@@ -82,15 +86,65 @@ export function runArrayTraversal(
     variables[declaration[1]] = initialValue
   }
 
-  function parseOperand(sourceValue: string): ScriptOperand | undefined {
-    const arrayIndex = /^values\s*\[\s*([A-Za-z_$][\w$]*)\s*\]$/.exec(sourceValue)
-    if (arrayIndex?.[1] === indexName) return { kind: 'array-value' }
-    if (isSafeIdentifier(sourceValue) && (sourceValue === indexName || Object.hasOwn(variables, sourceValue))) return { kind: 'variable', name: sourceValue }
-    if (/^-?\d+(?:\.\d+)?$/.test(sourceValue)) {
-      const value = Number(sourceValue)
-      if (Number.isFinite(value)) return { kind: 'number', value }
+  function parseExpression(sourceValue: string): ScriptExpression | undefined {
+    sourceValue = sourceValue.trim()
+    const tokens: string[] = []
+    const tokenPattern = /\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\]|(?:\d+(?:\.\d*)?|\.\d+)|[A-Za-z_$][\w$]*|[()+\-*/%])/gy
+    let cursor = 0
+    while (cursor < sourceValue.length) {
+      tokenPattern.lastIndex = cursor
+      const match = tokenPattern.exec(sourceValue)
+      if (!match) return undefined
+      tokens.push(match[1])
+      cursor = tokenPattern.lastIndex
+      if (tokens.length > 256) return undefined
     }
-    return undefined
+    if (tokens.length === 0) return undefined
+
+    let tokenIndex = 0
+    let nesting = 0
+    const precedence = (operator: string) => operator === '+' || operator === '-' ? 1 : operator === '*' || operator === '/' || operator === '%' ? 2 : 0
+    function parsePrimary(): ScriptExpression | undefined {
+      const token = tokens[tokenIndex++]
+      if (!token) return undefined
+      if (token === '+' || token === '-') {
+        const right = parsePrimary()
+        if (!right) return undefined
+        return token === '+' ? right : { kind: 'binary', operator: '-', left: { kind: 'number', value: 0 }, right }
+      }
+      if (token === '(') {
+        nesting += 1
+        if (nesting > 32) return undefined
+        const expression = parseBinary(1)
+        nesting -= 1
+        if (tokens[tokenIndex++] !== ')') return undefined
+        return expression
+      }
+      const arrayIndex = /^values\s*\[\s*([A-Za-z_$][\w$]*)\s*\]$/.exec(token)
+      if (arrayIndex?.[1] === indexName) return { kind: 'array-value' }
+      if (isSafeIdentifier(token) && (token === indexName || Object.hasOwn(variables, token))) return { kind: 'variable', name: token }
+      if (/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(token)) {
+        const value = Number(token)
+        if (Number.isFinite(value)) return { kind: 'number', value }
+      }
+      return undefined
+    }
+    function parseBinary(minPrecedence: number): ScriptExpression | undefined {
+      let left = parsePrimary()
+      if (!left) return undefined
+      while (true) {
+        const operator = tokens[tokenIndex]
+        const operatorPrecedence = operator ? precedence(operator) : 0
+        if (!operator || operatorPrecedence < minPrecedence) break
+        tokenIndex += 1
+        const right = parseBinary(operatorPrecedence + 1)
+        if (!right) return undefined
+        left = { kind: 'binary', operator: operator as '+' | '-' | '*' | '/' | '%', left, right }
+      }
+      return left
+    }
+    const expression = parseBinary(1)
+    return expression && tokenIndex === tokens.length ? expression : undefined
   }
 
   const body: ScriptStatement[] = []
@@ -100,13 +154,27 @@ export function runArrayTraversal(
     const line = lines[index].trim()
     const sourceLine = index + 1
     const currentBlock = blocks.at(-1)!
-    const condition = /^if\s*\(\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\]|[A-Za-z_$][\w$]*|-?\d+(?:\.\d+)?)\s*(===|!==|<=|>=|<|>)\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\]|[A-Za-z_$][\w$]*|-?\d+(?:\.\d+)?)\s*\)\s*\{$/.exec(line)
+    const condition = /^if\s*\((.*)\)\s*\{$/.exec(line)
     if (condition) {
-      const left = parseOperand(condition[1])
-      const right = parseOperand(condition[3])
-      if (!left || !right) return fail('unsupported_syntax', 'Conditions may compare values[i], a declared number, or a numeric literal.', sourceLine)
+      const expression = condition[1]
+      let depth = 0
+      let comparisonIndex = -1
+      let comparisonOperator: '<' | '<=' | '>' | '>=' | '===' | '!==' | undefined
+      for (let cursor = 0; cursor < expression.length; cursor += 1) {
+        if (expression[cursor] === '(') depth += 1
+        else if (expression[cursor] === ')') depth -= 1
+        else if (depth === 0) {
+          const operator = /^(===|!==|<=|>=|<|>)/.exec(expression.slice(cursor))?.[0]
+          if (operator) { comparisonIndex = cursor; comparisonOperator = operator as typeof comparisonOperator; break }
+        }
+        if (depth < 0) break
+      }
+      if (!comparisonOperator || comparisonIndex < 0) return fail('unsupported_syntax', 'Conditions must compare two numeric expressions.', sourceLine)
+      const left = parseExpression(expression.slice(0, comparisonIndex))
+      const right = parseExpression(expression.slice(comparisonIndex + comparisonOperator.length))
+      if (!left || !right) return fail('unsupported_syntax', 'Conditions may use values[i], declared numbers, numeric literals, and +, -, *, /, %, with parentheses.', sourceLine)
       const conditional: Extract<ScriptStatement, { kind: 'conditional' }> = {
-        kind: 'conditional', line: sourceLine, left, operator: condition[2] as Extract<ScriptStatement, { kind: 'conditional' }>['operator'],
+        kind: 'conditional', line: sourceLine, left, operator: comparisonOperator,
         right, consequent: [], alternate: [],
       }
       currentBlock.statements.push(conditional)
@@ -131,16 +199,16 @@ export function runArrayTraversal(
     const visit = /^\s*(?:highlight\(\s*([A-Za-z_$][\w$]*|values\s*\[\s*[A-Za-z_$][\w$]*\s*\])\s*\)|visit\(\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\])\s*\))\s*;\s*$/.exec(line)
     if (visit) {
       const argument = visit[1] ?? visit[2]
-      if (!parseOperand(argument)) return fail('unsupported_syntax', `Use highlight(${indexName}); or visit(values[${indexName}]);.`, sourceLine)
+      if (!parseExpression(argument)) return fail('unsupported_syntax', `Use highlight(${indexName}); or visit(values[${indexName}]);.`, sourceLine)
       currentBlock.statements.push({ kind: 'visit', line: sourceLine })
       statementCount += 1
       continue
     }
-    const assignment = /^([A-Za-z_$][\w$]*)\s*\+=\s*(values\s*\[\s*[A-Za-z_$][\w$]*\s*\]|[A-Za-z_$][\w$]*|-?\d+(?:\.\d+)?)\s*;$/.exec(line)
+    const assignment = /^([A-Za-z_$][\w$]*)\s*\+=\s*(.*?)\s*;$/.exec(line)
     if (assignment && isSafeIdentifier(assignment[1]) && Object.hasOwn(variables, assignment[1])) {
-      const operand = parseOperand(assignment[2])
-      if (!operand) return fail('unsupported_syntax', 'Accumulators can add values[i], a declared number, the loop index, or a numeric literal.', sourceLine)
-      currentBlock.statements.push({ kind: 'accumulate', line: sourceLine, variable: assignment[1], operand })
+      const expression = parseExpression(assignment[2])
+      if (!expression) return fail('unsupported_syntax', 'Accumulators may use values[i], declared numbers, numeric literals, and +, -, *, /, %, with parentheses.', sourceLine)
+      currentBlock.statements.push({ kind: 'accumulate', line: sourceLine, variable: assignment[1], expression })
       statementCount += 1
       continue
     }
@@ -182,10 +250,27 @@ export function runArrayTraversal(
     return null
   }
 
-  function readOperand(operand: ScriptOperand, index: number, line: number): { value: number } | { error: SmartScriptError } {
-    const value = operand.kind === 'array-value' ? selectedArray.values[index]
-      : operand.kind === 'variable' ? variables[operand.name]
-        : operand.value
+  function evaluateExpression(expression: ScriptExpression, index: number, line: number): { value: number } | { error: SmartScriptError } {
+    if (expression.kind === 'binary') {
+      const left = evaluateExpression(expression.left, index, line)
+      if ('error' in left) return left
+      const right = evaluateExpression(expression.right, index, line)
+      if ('error' in right) return right
+      if ((expression.operator === '/' || expression.operator === '%') && right.value === 0) {
+        return { error: { code: 'unsupported_input', message: 'Arithmetic expressions cannot divide or take a remainder by zero.', line } }
+      }
+      const value = expression.operator === '+' ? left.value + right.value
+        : expression.operator === '-' ? left.value - right.value
+          : expression.operator === '*' ? left.value * right.value
+            : expression.operator === '/' ? left.value / right.value
+              : left.value % right.value
+      return Number.isFinite(value)
+        ? { value }
+        : { error: { code: 'unsupported_input', message: 'Arithmetic expressions must stay finite.', line } }
+    }
+    const value = expression.kind === 'array-value' ? selectedArray.values[index]
+      : expression.kind === 'variable' ? variables[expression.name]
+        : expression.value
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       return { error: { code: 'unsupported_input', message: 'Conditional expressions and numeric accumulators require finite numeric values.', line } }
     }
@@ -196,9 +281,9 @@ export function runArrayTraversal(
     for (const statement of statements) {
       variables[indexName] = index
       if (statement.kind === 'conditional') {
-        const left = readOperand(statement.left, index, statement.line)
+        const left = evaluateExpression(statement.left, index, statement.line)
         if ('error' in left) return left.error
-        const right = readOperand(statement.right, index, statement.line)
+        const right = evaluateExpression(statement.right, index, statement.line)
         if ('error' in right) return right.error
         const comparison = left.value - right.value
         const condition = statement.operator === '<' ? comparison < 0
@@ -215,7 +300,7 @@ export function runArrayTraversal(
       }
 
       if (statement.kind === 'accumulate') {
-        const operand = readOperand(statement.operand, index, statement.line)
+        const operand = evaluateExpression(statement.expression, index, statement.line)
         if ('error' in operand) return operand.error
         const nextValue = variables[statement.variable] + operand.value
         if (!Number.isFinite(nextValue)) return { code: 'unsupported_input', message: 'Accumulator result must stay finite.', line: statement.line }

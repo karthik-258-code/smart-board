@@ -76,6 +76,24 @@ describe('Smart Script array traversal', () => {
     if (result.ok) expect(result.value.events.at(-1)?.variables).toEqual({ score: 6, i: 2 })
   })
 
+  it('evaluates bounded arithmetic expressions in conditions and accumulator updates', () => {
+    const initial = historyWithArray([2, 5, 8])
+    const source = 'let score = 0;\nfor (let i = 0; i < values.length; i++) {\n  if ((values[i] + 1) % 3 === 0) {\n    score += values[i] * 2 + i;\n  }\n  highlight(i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events.at(-1)?.variables).toEqual({ score: 33, i: 2 })
+  })
+
+  it('rejects division by zero without returning a partial history', () => {
+    const initial = historyWithArray([2, 5])
+    const source = 'let score = 0;\nfor (let i = 0; i < values.length; i++) {\n  score += values[i] / (i - i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 3 } })
+    expect(initial.cursor).toBe(1)
+  })
+
   it('rejects unsupported code with a source-line diagnostic without changing history', () => {
     const initial = historyWithArray([1])
     const result = runArrayTraversal('while (true) { process.exit(); }', initial, 'values-board')
