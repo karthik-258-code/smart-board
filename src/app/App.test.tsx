@@ -47,6 +47,18 @@ describe('Smart Board app shell', () => {
     expect(screen.getByText('i = 1')).toBeInTheDocument()
   })
 
+  it('runs conditional traversal and exposes its branch variables in the runner', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add array' }))
+    const source = 'let positive = 0;\nlet notPositive = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] > 0) {\n    positive += 1;\n  } else {\n    notPositive += 1;\n  }\n  highlight(i);\n}'
+    fireEvent.change(screen.getByRole('textbox', { name: 'Smart Script source' }), { target: { value: source } })
+    fireEvent.click(screen.getByRole('button', { name: 'Run Smart Script' }))
+
+    expect(screen.getByText('positive = 3')).toBeInTheDocument()
+    expect(screen.getByText('notPositive = 0')).toBeInTheDocument()
+    expect(screen.getByText('i = 2')).toBeInTheDocument()
+  })
+
   it('shows a line-specific unsupported-script diagnostic without applying partial state', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Add array' }))

@@ -49,7 +49,7 @@ The current app supports a manually authored board with:
 - Import and export versioned `.smart-board.json` files with full timeline and script traces for manual sharing. Imports validate before replacement and require confirmation.
 - Light and dark themes, with accessible names and visible selection states.
 
-Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports array traversal with numeric accumulators and a binary-search template for sorted numeric arrays. The runner shows variables, the inspected value and comparison result, highlights candidate cells, and can synchronize a matching traversal pointer, a `mid` pointer, and a range named `search`. Source length, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
+Smart Script is intentionally not JavaScript or TypeScript execution. It parses a small syntax subset and never evaluates user source. It supports array traversal, numeric accumulators, nested numeric `if/else` conditions, and a binary-search template for sorted numeric arrays. The runner shows variables, the inspected value and comparison result, highlights candidate cells, and can synchronize a matching traversal pointer, a `mid` pointer, and a range named `search`. Source length, loop iterations, statement count, and generated timeline events are capped. Unsupported syntax receives a line-specific diagnostic; manual board editing remains available. See [the execution subset design](docs/smart-script-execution.md). Cloud sharing and collaboration are future work.
 
 ## Project description
 
@@ -294,7 +294,7 @@ Initial DP tables, dependency arrows, prediction checkpoints, stacks, queues, li
 
 ### Phase 5: Connect supported code
 
-Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes constrained array traversal and binary search, shows runtime variables, highlights visited values, and synchronizes selected pointers and ranges. Remaining work: broader expressions and control flow, more data-structure mappings, and richer runtime inspection.
+Built-in TypeScript source snippets map replayable example operations to highlighted source lines. Smart Script executes constrained array traversal with conditional branches and binary search, shows runtime variables and comparison values, highlights visited values, and synchronizes selected pointers and ranges. Remaining work: broader expressions and control flow, more data-structure mappings, and richer runtime inspection.
 
 ### Phase 6: Persist and share
 

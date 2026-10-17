@@ -54,6 +54,28 @@ describe('Smart Script array traversal', () => {
     expect(result.value.events.at(-1)?.variables).toEqual({ total: 24, i: 2 })
   })
 
+  it('executes if/else branches and exposes each conditional accumulator update', () => {
+    const initial = historyWithArray([3, -2, 0, 5])
+    const source = 'let positive = 0;\nlet notPositive = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] > 0) {\n    positive += 1;\n  } else {\n    notPositive += 1;\n  }\n  highlight(i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.events.filter((event) => event.line === 4).map((event) => event.variables.i)).toEqual([0, 1, 2, 3])
+    expect(result.value.events.filter((event) => event.line === 5).map((event) => event.variables.positive)).toEqual([1, 2])
+    expect(result.value.events.filter((event) => event.line === 7).map((event) => event.variables.notPositive)).toEqual([1, 2])
+    expect(result.value.events.at(-1)?.variables).toEqual({ positive: 2, notPositive: 2, i: 3 })
+  })
+
+  it('supports nested conditions using declared variables and numeric array values', () => {
+    const initial = historyWithArray([1, 8, -3])
+    const source = 'let score = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] > 0) {\n    if (values[i] >= 5) {\n      score += 1;\n    } else {\n      score += 2;\n    }\n  } else {\n    score += 3;\n  }\n  highlight(i);\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events.at(-1)?.variables).toEqual({ score: 6, i: 2 })
+  })
+
   it('rejects unsupported code with a source-line diagnostic without changing history', () => {
     const initial = historyWithArray([1])
     const result = runArrayTraversal('while (true) { process.exit(); }', initial, 'values-board')
@@ -83,7 +105,7 @@ describe('Smart Script array traversal', () => {
     const initial = historyWithArray(['word'])
     const result = runArrayTraversal('let total = 0;\nfor (let i = 0; i < values.length; i++) {\n  total += values[i];\n}', initial, 'values-board')
 
-    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_syntax', line: 3 } })
+    expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_input', line: 3 } })
     expect(initial.cursor).toBe(1)
   })
 

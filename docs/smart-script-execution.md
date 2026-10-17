@@ -26,6 +26,21 @@ Each statement highlights the current array cell. If the selected array has one 
 
 Before the loop, scripts may declare unique integer variables such as `let total = 0;`. Accumulator statements update those variables and each timeline snapshot shows their values. Array accumulators require numeric values. Since the current visualization is an array, accumulator statements also highlight the value being read.
 
+Traversal bodies also support nested numeric `if/else` blocks. Conditions compare `values[i]`, the loop index, declared numeric variables, or numeric literals with `<`, `<=`, `>`, `>=`, `===`, or `!==`. Each executed condition and branch statement becomes a timeline step. For example:
+
+```ts
+let positive = 0;
+let notPositive = 0;
+for (let i = 0; i < values.length; i++) {
+  if (values[i] > 0) {
+    positive += 1;
+  } else {
+    notPositive += 1;
+  }
+  highlight(i);
+}
+```
+
 ### Binary search
 
 The panel can load a fixed control-flow template for binary search. Change only its numeric target:
@@ -58,4 +73,4 @@ The source is limited to 10,000 characters, the loop to 1,000 iterations, and it
 
 ## Explicit limits
 
-The current subset does not support arbitrary expressions, user-defined functions, input/output, asynchronous code, or other data structures. Binary-search control flow is fixed to the template above. Traversal reports declared integer variables and the loop index; binary search reports its bounds, midpoint, target, and found index when present. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
+The current subset does not support arbitrary expressions, loops inside traversal bodies, user-defined functions, input/output, asynchronous code, or other data structures. Binary-search control flow is fixed to the template above. Traversal reports declared numeric variables and the loop index; binary search reports its bounds, midpoint, inspected value, comparison, target, and found index when present. It is a stepping and visualization foundation, not a general-purpose sandbox. Future language support should preserve the same requirements: bounded execution, explicit diagnostics, deterministic snapshots, and board changes routed through validated `BoardOperation` history.
