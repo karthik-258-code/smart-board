@@ -44,11 +44,14 @@ type ScriptExpression =
   | { kind: 'variable'; name: string }
   | { kind: 'number'; value: number }
   | { kind: 'binary'; operator: '+' | '-' | '*' | '/' | '%'; left: ScriptExpression; right: ScriptExpression }
+type ScriptCondition =
+  | { kind: 'comparison'; left: ScriptExpression; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptExpression }
+  | { kind: 'logical'; operator: '&&' | '||'; left: ScriptCondition; right: ScriptCondition }
 type ScriptStatement =
   | { kind: 'visit'; line: number }
   | { kind: 'loop-control'; line: number; control: 'break' | 'continue' }
   | { kind: 'accumulate'; line: number; variable: string; expression: ScriptExpression }
-  | { kind: 'conditional'; line: number; left: ScriptExpression; operator: '<' | '<=' | '>' | '>=' | '===' | '!=='; right: ScriptExpression; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
+  | { kind: 'conditional'; line: number; condition: ScriptCondition; consequent: ScriptStatement[]; alternate: ScriptStatement[] }
 
 /** Executes a deliberately small, non-evaluating Smart Script subset. */
 export function runArrayTraversal(
@@ -148,6 +151,55 @@ export function runArrayTraversal(
     return expression && tokenIndex === tokens.length ? expression : undefined
   }
 
+  let conditionDepth = 0
+  function parseCondition(sourceValue: string): ScriptCondition | undefined {
+    sourceValue = sourceValue.trim()
+    conditionDepth += 1
+    if (conditionDepth > 32) { conditionDepth -= 1; return undefined }
+    try {
+      let depth = 0
+      let enclosesAll = sourceValue.startsWith('(') && sourceValue.endsWith(')')
+      for (let cursor = 0; cursor < sourceValue.length; cursor += 1) {
+        if (sourceValue[cursor] === '(') depth += 1
+        else if (sourceValue[cursor] === ')') depth -= 1
+        if (depth === 0 && cursor < sourceValue.length - 1) enclosesAll = false
+        if (depth < 0) return undefined
+      }
+      if (depth !== 0) return undefined
+      if (enclosesAll) return parseCondition(sourceValue.slice(1, -1))
+
+      function findTopLevel(operators: string[]): { index: number; operator: string } | undefined {
+        let nested = 0
+        for (let cursor = 0; cursor < sourceValue.length; cursor += 1) {
+          if (sourceValue[cursor] === '(') nested += 1
+          else if (sourceValue[cursor] === ')') nested -= 1
+          else if (nested === 0) {
+            const operator = operators.find((candidate) => sourceValue.startsWith(candidate, cursor))
+            if (operator) return { index: cursor, operator }
+          }
+        }
+        return undefined
+      }
+
+      const logical = findTopLevel(['||']) ?? findTopLevel(['&&'])
+      if (logical) {
+        const left = parseCondition(sourceValue.slice(0, logical.index))
+        const right = parseCondition(sourceValue.slice(logical.index + logical.operator.length))
+        if (left && right) return { kind: 'logical', operator: logical.operator as '&&' | '||', left, right }
+        return undefined
+      }
+      const comparison = findTopLevel(['===', '!==', '<=', '>=', '<', '>'])
+      if (!comparison) return undefined
+      const left = parseExpression(sourceValue.slice(0, comparison.index))
+      const right = parseExpression(sourceValue.slice(comparison.index + comparison.operator.length))
+      return left && right
+        ? { kind: 'comparison', left, operator: comparison.operator as '<' | '<=' | '>' | '>=' | '===' | '!==', right }
+        : undefined
+    } finally {
+      conditionDepth -= 1
+    }
+  }
+
   const body: ScriptStatement[] = []
   let statementCount = 0
   const blocks: Array<{ statements: ScriptStatement[]; conditional?: Extract<ScriptStatement, { kind: 'conditional' }>; alternateOpen?: boolean }> = [{ statements: body }]
@@ -157,26 +209,10 @@ export function runArrayTraversal(
     const currentBlock = blocks.at(-1)!
     const condition = /^if\s*\((.*)\)\s*\{$/.exec(line)
     if (condition) {
-      const expression = condition[1]
-      let depth = 0
-      let comparisonIndex = -1
-      let comparisonOperator: '<' | '<=' | '>' | '>=' | '===' | '!==' | undefined
-      for (let cursor = 0; cursor < expression.length; cursor += 1) {
-        if (expression[cursor] === '(') depth += 1
-        else if (expression[cursor] === ')') depth -= 1
-        else if (depth === 0) {
-          const operator = /^(===|!==|<=|>=|<|>)/.exec(expression.slice(cursor))?.[0]
-          if (operator) { comparisonIndex = cursor; comparisonOperator = operator as typeof comparisonOperator; break }
-        }
-        if (depth < 0) break
-      }
-      if (!comparisonOperator || comparisonIndex < 0) return fail('unsupported_syntax', 'Conditions must compare two numeric expressions.', sourceLine)
-      const left = parseExpression(expression.slice(0, comparisonIndex))
-      const right = parseExpression(expression.slice(comparisonIndex + comparisonOperator.length))
-      if (!left || !right) return fail('unsupported_syntax', 'Conditions may use values[i], declared numbers, numeric literals, and +, -, *, /, %, with parentheses.', sourceLine)
+      const parsedCondition = parseCondition(condition[1])
+      if (!parsedCondition) return fail('unsupported_syntax', 'Conditions may compare numeric expressions with <, <=, >, >=, ===, or !== and combine them with && or ||.', sourceLine)
       const conditional: Extract<ScriptStatement, { kind: 'conditional' }> = {
-        kind: 'conditional', line: sourceLine, left, operator: comparisonOperator,
-        right, consequent: [], alternate: [],
+        kind: 'conditional', line: sourceLine, condition: parsedCondition, consequent: [], alternate: [],
       }
       currentBlock.statements.push(conditional)
       blocks.push({ statements: conditional.consequent, conditional, alternateOpen: false })
@@ -279,24 +315,36 @@ export function runArrayTraversal(
     return { value }
   }
 
+  function evaluateCondition(condition: ScriptCondition, index: number, line: number): { value: boolean } | { error: SmartScriptError } {
+    if (condition.kind === 'logical') {
+      const left = evaluateCondition(condition.left, index, line)
+      if ('error' in left) return left
+      if (condition.operator === '&&' && !left.value) return { value: false }
+      if (condition.operator === '||' && left.value) return { value: true }
+      return evaluateCondition(condition.right, index, line)
+    }
+    const left = evaluateExpression(condition.left, index, line)
+    if ('error' in left) return left
+    const right = evaluateExpression(condition.right, index, line)
+    if ('error' in right) return right
+    const value = condition.operator === '<' ? left.value < right.value
+      : condition.operator === '<=' ? left.value <= right.value
+        : condition.operator === '>' ? left.value > right.value
+          : condition.operator === '>=' ? left.value >= right.value
+            : condition.operator === '===' ? left.value === right.value
+              : left.value !== right.value
+    return { value }
+  }
+
   function execute(statements: ScriptStatement[], index: number): SmartScriptError | 'break' | 'continue' | null {
     for (const statement of statements) {
       variables[indexName] = index
       if (statement.kind === 'conditional') {
-        const left = evaluateExpression(statement.left, index, statement.line)
-        if ('error' in left) return left.error
-        const right = evaluateExpression(statement.right, index, statement.line)
-        if ('error' in right) return right.error
-        const comparison = left.value - right.value
-        const condition = statement.operator === '<' ? comparison < 0
-          : statement.operator === '<=' ? comparison <= 0
-            : statement.operator === '>' ? comparison > 0
-              : statement.operator === '>=' ? comparison >= 0
-                : statement.operator === '===' ? comparison === 0
-                  : comparison !== 0
+        const condition = evaluateCondition(statement.condition, index, statement.line)
+        if ('error' in condition) return condition.error
         const conditionStep = applyStep(statement.line, index)
         if (conditionStep) return conditionStep
-        const branchError = execute(condition ? statement.consequent : statement.alternate, index)
+        const branchError = execute(condition.value ? statement.consequent : statement.alternate, index)
         if (branchError) return branchError
         continue
       }

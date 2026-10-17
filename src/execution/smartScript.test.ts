@@ -118,6 +118,15 @@ describe('Smart Script array traversal', () => {
     }
   })
 
+  it('evaluates compound conditions with short-circuit logic', () => {
+    const initial = historyWithArray([0, 2, -5, 8])
+    const source = 'let count = 0;\nfor (let i = 0; i < values.length; i++) {\n  if (values[i] === 0 || values[i] > 0 && 10 / values[i] > 1) {\n    count += 1;\n  }\n}'
+    const result = runArrayTraversal(source, initial, 'values-board')
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.value.events.at(-1)?.variables).toEqual({ count: 3, i: 3 })
+  })
+
   it('rejects unsupported code with a source-line diagnostic without changing history', () => {
     const initial = historyWithArray([1])
     const result = runArrayTraversal('while (true) { process.exit(); }', initial, 'values-board')
